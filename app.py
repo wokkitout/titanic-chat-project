@@ -24,7 +24,14 @@ person = passengers_data.get(p_name, passengers_data["Capt. E.J. Smith"])
 st.title(f"🚢 {p_name}")
 
 # --- 3. EXTRACT AND DISPLAY IMAGE ---
-# This pulls whatever URL you put in the '@images (File Path)' column
+# We use pd.isna() to check if the cell is empty before trying to use it
+import pandas as pd 
+
 image_url = person.get("@images (File Path)")
-if image_url and image_url.startswith("http"):
+
+# This checks: Is it a string? Is it NOT empty? Does it start with http?
+if isinstance(image_url, str) and not pd.isna(image_url) and image_url.startswith("http"):
     st.image(image_url, width=250)
+else:
+    # Optional: show a placeholder boat if no image is found
+    st.info("No portrait available in the ship's archives.")
