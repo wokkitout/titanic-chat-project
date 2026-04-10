@@ -1,5 +1,5 @@
 import streamlit as st
-from google import genai
+import google.generativeai as genai
 import pandas as pd
 
 # --- 1. VINTAGE STYLING ---
@@ -66,16 +66,18 @@ if prompt := st.chat_input("Speak to the passenger..."):
         st.error("Missing GOOGLE_API_KEY in Secrets!")
     else:
         try:
-            client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
-            model_id = "gemini-1.5-flash"
+            # 1. Configure the classic library
+            genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+            
+            # 2. Build the instruction manual for the AI
             bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
             instructions = f"You are {person['Name']}. {bio} It is April 1912. Stay in character."
+            
+            # 3. Create the model using the stable string
+            model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=instructions)
 
-            response = client.models.generate_content(
-                model=model_id,
-                contents=prompt,
-                config={'system_instruction': instructions}
-            )
+            # 4. Generate the response
+            response = model.generate_content(prompt)
 
             if response and response.text:
                 with st.chat_message("assistant"):
@@ -83,5 +85,6 @@ if prompt := st.chat_input("Speak to the passenger..."):
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
             else:
                 st.warning("The passenger is silent. Try again.")
+                
         except Exception as e:
             st.error(f"Telegraph error: {e}")
