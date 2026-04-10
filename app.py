@@ -9,7 +9,6 @@ st.markdown("""
     .stApp { background-color: #f4ecd8; font-family: 'Courier New', Courier, monospace; }
     .stApp p, .stMarkdown, .stChatMessage, span, div, label { color: #000000 !important; }
     h1, h2, h3 { color: #3e2723 !important; text-align: center; border-bottom: 2px solid #3e2723; font-variant: small-caps; }
-    /* Sidebar styling */
     [data-testid="stSidebar"] { background-color: #3e2723; color: white; }
     [data-testid="stSidebar"] * { color: white !important; }
     .stChatMessage { background-color: #ffffffcc !important; border-radius: 0px; border-left: 5px solid #3e2723; margin-bottom: 10px; }
@@ -55,9 +54,50 @@ if "GOOGLE_API_KEY" not in st.secrets:
 
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
-# Fetch models for the Sidebar
+# Setup models for the Sidebar
 try:
     available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
     best_model = next((m for m in available_models if '2.5-flash' in m), available_models[0])
     
     with st.sidebar:
+        st.title("⚙️ ENGINE ROOM")
+        st.success(f"Connected to: {best_model}")
+        st.write("Available Frequencies:", available_models)
+except Exception as e:
+    st.sidebar.error("Could not reach the Engine Room.")
+    best_model = "gemini-1.5-flash"
+
+# --- 6. CHAT LOGIC ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+if prompt := st.chat_input("Speak to the passenger..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    try:
+        bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
+        instructions = f"You are {person['Name']}. {bio} It is April 1912. Stay in character."
+        
+        model = genai.GenerativeModel(best_model, system_instruction=instructions)
+        response = model.generate_content(prompt, stream=True)
+
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            full_response = ""
+            for chunk in response:
+                if chunk.text: 
+                    full_response += chunk.text
+                    message_placeholder.markdown(full_response + "▌")
+            
+            message_placeholder.markdown(full_response)
+            
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
+    except Exception as e:
+        st.error(f"Telegraph error: {e}")
