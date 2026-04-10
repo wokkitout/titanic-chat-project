@@ -9,7 +9,7 @@ st.markdown("""
     .stApp { background-color: #f4ecd8; font-family: 'Courier New', Courier, monospace; }
     .stApp p, .stMarkdown, .stChatMessage, span, div, label { color: #000000 !important; }
     h1, h2, h3 { color: #3e2723 !important; text-align: center; border-bottom: 2px solid #3e2723; font-variant: small-caps; }
-    /* Hide the sidebar expander button just in case */
+    /* This completely hides the sidebar expander arrow */
     [data-testid="collapsedControl"] { display: none; }
     .stChatMessage { background-color: #ffffffcc !important; border-radius: 0px; border-left: 5px solid #3e2723; margin-bottom: 10px; }
     </style>
@@ -49,7 +49,7 @@ if isinstance(image_url, str) and image_url.strip().startswith("http"):
         clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
     st.image(clean_url, width=300)
 
-# --- 5. CHAT LOGIC (CLEAN UI) ---
+# --- 5. CHAT LOGIC ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -68,10 +68,16 @@ if prompt := st.chat_input("Speak to the passenger..."):
         try:
             genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
             
-            # Silently fetch available models
             available_models = []
             for m in genai.list_models():
                 if 'generateContent' in m.supported_generation_methods:
                     available_models.append(m.name.replace('models/', ''))
             
-            if not available_
+            if not available_models:
+                st.error("Your API key is valid, but it has no AI models enabled on it!")
+                st.stop()
+
+            # Autopilot: Grabs 2.5-flash based on your screenshot
+            best_model = next((m for m in available_models if '2.5-flash' in m), available_models[0])
+
+            bio = person
