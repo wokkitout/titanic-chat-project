@@ -44,23 +44,30 @@ if not person:
 
 st.markdown(f"## 🚢 {person['Name']}")
 
-# --- 4. IMAGE DISPLAY (ROBUST VERSION) ---
+# --- 4. IMAGE DISPLAY (FINAL STABLE VERSION) ---
 image_url = person.get("ImageLink")
 if isinstance(image_url, str) and image_url.strip().startswith("http"):
     url = image_url.strip()
     if "drive.google.com" in url:
-        # This regex/split logic pulls the ID out of any Drive link
         try:
-            if "id=" in url:
-                file_id = url.split("id=")[1].split("&")[0]
-            else:
-                file_id = url.split("/d/")[1].split("/")[0]
-            clean_url = f"https://lh3.googleusercontent.com/u/0/d/{file_id}"
-        except:
-            clean_url = url # Fallback to original if it fails
+            # Extract ID more robustly
+            import re
+            file_id = ""
+            id_match = re.search(r'[-\w]{25,}', url)
+            if id_match:
+                file_id = id_match.group()
+            
+            # Using the 'uc' (Universal Content) endpoint with a size parameter
+            # This forces Drive to render the image directly
+            clean_url = f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000"
+        except Exception:
+            clean_url = url
     else:
         clean_url = url
+        
     st.image(clean_url, width=300)
+else:
+    st.info("Logbook photo currently being processed by the White Star Line...")
 
 # --- 5. SECRETS & ENGINE ROOM (FIXED MODEL LOGIC) ---
 if "GOOGLE_API_KEY" not in st.secrets:
