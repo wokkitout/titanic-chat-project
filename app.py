@@ -6,10 +6,19 @@ import pandas as pd
 st.set_page_config(page_title="Titanic Passenger Log", page_icon="🚢")
 st.markdown("""
     <style>
+    /* Hides the top right toolbar (GitHub icon, etc.) */
+    header {visibility: hidden;}
+    
+    /* Hides the Streamlit footer at the bottom */
+    footer {visibility: hidden;}
+
     .stApp { background-color: #f4ecd8; font-family: 'Courier New', Courier, monospace; }
     .stApp p, .stMarkdown, .stChatMessage, span, div, label { color: #000000 !important; }
     h1, h2, h3 { color: #3e2723 !important; text-align: center; border-bottom: 2px solid #3e2723; font-variant: small-caps; }
+    
+    /* Hides the sidebar expander arrow */
     [data-testid="collapsedControl"] { display: none; }
+    
     .stChatMessage { background-color: #ffffffcc !important; border-radius: 0px; border-left: 5px solid #3e2723; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
