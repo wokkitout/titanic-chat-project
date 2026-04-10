@@ -2,40 +2,16 @@ import streamlit as st
 from google import genai
 import pandas as pd
 
-# --- 1. VINTAGE STYLING (The "Deep Ink" Fix) ---
+# --- 1. VINTAGE STYLING ---
 st.set_page_config(page_title="Titanic Passenger Log", page_icon="🚢")
 st.markdown("""
     <style>
-    /* Force the background and the font */
-    .stApp { 
-        background-color: #f4ecd8; 
-        font-family: 'Courier New', Courier, monospace; 
-    }
-    
-    /* UNIVERSAL BLACK TEXT: This covers paragraphs, spans, headers, and chat */
-    .stApp p, .stMarkdown, .stChatMessage, span, div, label, .stChatFloatingInputContainer { 
-        color: #000000 !important; 
-    }
-    
-    /* Header styling */
-    h1 { 
-        color: #3e2723 !important; 
-        text-align: center; 
-        border-bottom: 2px solid #3e2723; 
-        font-variant: small-caps; 
-    }
-
-    /* Sidebar Styling */
+    .stApp { background-color: #f4ecd8; font-family: 'Courier New', Courier, monospace; }
+    .stApp p, .stMarkdown, .stChatMessage, span, div, label { color: #000000 !important; }
+    h1 { color: #3e2723 !important; text-align: center; border-bottom: 2px solid #3e2723; font-variant: small-caps; }
     [data-testid="stSidebar"] { background-color: #3e2723; }
     [data-testid="stSidebar"] * { color: #ffffff !important; }
-
-    /* Message Bubbles */
-    .stChatMessage { 
-        background-color: #ffffffcc !important; 
-        border-radius: 0px; 
-        border-left: 5px solid #3e2723; 
-        margin-bottom: 10px; 
-    }
+    .stChatMessage { background-color: #ffffffcc !important; border-radius: 0px; border-left: 5px solid #3e2723; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -79,11 +55,10 @@ else:
 # --- 5. CHAT LOGIC ---
 with st.sidebar:
     st.title("⚙️ Engine Room")
-    # Switched to the most stable 2026 frequencies to avoid 404 errors
-    model_choice = st.selectbox("Telegraph Frequency:", ["gemini-2-flash", "gemini-1.5-flash"])
+    # Using the stable 2026 production IDs
+    model_choice = st.selectbox("Telegraph Frequency:", ["gemini-2.0-flash", "gemini-1.5-flash"])
 
 if "GOOGLE_API_KEY" in st.secrets:
-    # Initialize the modern 2026 client
     client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
     
     if "messages" not in st.session_state:
@@ -98,6 +73,22 @@ if "GOOGLE_API_KEY" in st.secrets:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Pull narrative from Column E
+        # FIX: Ensure this f-string is one continuous line to avoid SyntaxErrors
         bio_text = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
-        system_prompt = f"You are {person['Name']}. {bio_text} It
+        system_prompt = f"You are {person['Name']}. {bio_text} It is April 1912. Stay in character."
+        
+        try:
+            response = client.models.generate_content(
+                model=model_choice,
+                contents=prompt,
+                config={'system_instruction': system_prompt}
+            )
+            
+            if response.text:
+                with st.chat_message("assistant"):
+                    st.markdown(response.text)
+                    st.session_state.messages.append({"role": "assistant", "content": response.text})
+        except Exception as e:
+            st.error(f"Telegraph error: {e}")
+else:
+    st.error("Missing API Key in Streamlit Secrets!")
