@@ -1,11 +1,52 @@
-# --- 4. IMAGE & QR DISPLAY ---
+import streamlit as st
+import google.generativeai as genai
+import pandas as pd
 import urllib.parse
 import qrcode
 
-# Put your actual Streamlit URL right here:
-BASE_URL = "https://your-repo-name.streamlit.app/"
+# --- 1. VINTAGE STYLING ---
+st.set_page_config(page_title="Titanic Passenger Log", page_icon="🚢", layout="centered")
+st.markdown("""
+    <style>
+    .stApp { background-color: #f4ecd8; font-family: 'Courier New', Courier, monospace; }
+    .stApp p, .stMarkdown, .stChatMessage, span, div, label { color: #000000 !important; }
+    h1, h2, h3 { color: #3e2723 !important; text-align: center; border-bottom: 2px solid #3e2723; font-variant: small-caps; }
+    [data-testid="collapsedControl"] { display: none; }
+    .stChatMessage { background-color: #ffffffcc !important; border-radius: 0px; border-left: 5px solid #3e2723; margin-bottom: 10px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-col1, col2 = st.columns([2, 1]) # Splits the screen to look like a ticket
+# --- 2. DATA LOADING ---
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
+
+@st.cache_data
+def load_data():
+    df = pd.read_csv(SHEET_URL)
+    df['Name_Lower'] = df['Name'].str.lower().str.strip()
+    return df.set_index('Name_Lower').to_dict('index')
+
+try:
+    passengers_dict = load_data()
+except Exception as e:
+    st.error(f"⚠️ Logbook connection failed: {e}")
+    st.stop()
+
+# --- 3. IDENTIFY PASSENGER ---
+query_params = st.query_params
+p_query = query_params.get("p", "Capt. E.J. Smith").lower().strip()
+person = passengers_dict.get(p_query, passengers_dict.get("capt. e.j. smith"))
+
+if not person:
+    st.error("Passenger not found.")
+    st.stop()
+
+st.markdown(f"## 🚢 {person['Name']}")
+
+# --- 4. IMAGE & QR CODE DISPLAY ---
+col1, col2 = st.columns([2, 1])
+
+# IMPORTANT: Replace this with your actual Streamlit App URL!
+BASE_URL = "https://your-repo-name.streamlit.app/"
 
 with col1:
     image_url = person.get("ImageLink")
@@ -14,10 +55,56 @@ with col1:
         st.image(clean_url, width=300)
 
 with col2:
-    # Build the safe URL for this specific passenger
     safe_name = urllib.parse.quote(person['Name'])
     passenger_url = f"{BASE_URL}?p={safe_name}"
-    
-    # Generate the QR Code ink
     qr = qrcode.make(passenger_url)
     st.image(qr.get_image(), width=150, caption="Scan to open Telegraph")
+
+# --- 5. SECRETS CHECK ---
+if "GOOGLE_API_KEY" not in st.secrets:
+    st.error("Missing GOOGLE_API_KEY in Secrets!")
+    st.stop()
+
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+
+# --- 6. CHAT LOGIC (FAST STREAMING) ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+if prompt := st.chat_input("Speak to the passenger..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    try:
+        available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        
+        if not available_models:
+            st.error("Your API key has no models enabled!")
+            st.stop()
+
+        best_model = next((m for m in available_models if '2.5-flash' in m), available_models[0])
+        bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
+        instructions = f"You are {person['Name']}. {bio} It is April 1912. Stay in character."
+        
+        model = genai.GenerativeModel(best_model, system_instruction=instructions)
+        response = model.generate_content(prompt, stream=True)
+
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            full_response = ""
+            for chunk in response:
+                if chunk.text:
+                    full_response += chunk.text
+                    message_placeholder.markdown(full_response + "▌")
+            
+            message_placeholder.markdown(full_response)
+            
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
+    except Exception as e:
+        st.error(f"Telegraph error: {e}")
