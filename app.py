@@ -42,8 +42,11 @@ if not person:
 
 st.markdown(f"## 🚢 {person['Name']}")
 
-# --- 4. IMAGE & QR CODE DISPLAY ---
-col1, col2 = st.columns([2, 1])
+# --- 4. IMAGE DISPLAY ---
+image_url = person.get("ImageLink")
+if isinstance(image_url, str) and image_url.strip().startswith("http"):
+    clean_url = image_url.strip().replace("/view", "/uc?export=download&id=").split("?")[0] if "drive.google.com" in image_url else image_url.strip()
+    st.image(clean_url, width=300)
 
 # IMPORTANT: Replace this with your actual Streamlit App URL!
 BASE_URL = "https://your-repo-name.streamlit.app/"
