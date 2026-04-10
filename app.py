@@ -47,24 +47,24 @@ if isinstance(image_url, str) and image_url.strip().startswith("http"):
     clean_url = image_url.strip().replace("/view", "/uc?export=download&id=").split("?")[0] if "drive.google.com" in image_url else image_url.strip()
     st.image(clean_url, width=300)
 
-# --- 5. SECRETS & ENGINE ROOM ---
+# --- 5. SECRETS & ENGINE ROOM (SPEED OPTIMIZED) ---
 if "GOOGLE_API_KEY" not in st.secrets:
-    st.error("Missing GOOGLE_API_KEY in Secrets!")
+    st.error("Missing GOOGLE_API_KEY!")
     st.stop()
 
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
-# Setup models for the Sidebar
+# We specifically look for 'flash' models as they are the fastest
 try:
     available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-    best_model = next((m for m in available_models if '2.5-flash' in m), available_models[0])
+    # Priority: 2.0 Flash is currently the speed king
+    best_model = next((m for m in available_models if '2.0-flash' in m), 
+                 next((m for m in available_models if 'flash' in m), available_models[0]))
     
     with st.sidebar:
         st.title("⚙️ ENGINE ROOM")
-        st.success(f"Connected to: {best_model}")
-        st.write("Available Frequencies:", available_models)
+        st.success(f"Speed Mode: {best_model}")
 except Exception as e:
-    st.sidebar.error("Could not reach the Engine Room.")
     best_model = "gemini-1.5-flash"
 
 # --- 6. CHAT LOGIC ---
@@ -72,32 +72,3 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-if prompt := st.chat_input("Speak to the passenger..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    try:
-        bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
-        instructions = f"You are {person['Name']}. {bio} It is April 1912. Stay in character."
-        
-        model = genai.GenerativeModel(best_model, system_instruction=instructions)
-        response = model.generate_content(prompt, stream=True)
-
-        with st.chat_message("assistant"):
-            message_placeholder = st.empty()
-            full_response = ""
-            for chunk in response:
-                if chunk.text: 
-                    full_response += chunk.text
-                    message_placeholder.markdown(full_response + "▌")
-            
-            message_placeholder.markdown(full_response)
-            
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
-            
-    except Exception as e:
-        st.error(f"Telegraph error: {e}")
