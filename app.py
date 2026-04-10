@@ -33,24 +33,14 @@ except Exception as e:
     st.error(f"Could not connect to the logbook: {e}")
     st.stop()
 
-# --- 3. PASSENGER & IMAGE IDENTIFICATION ---
-with st.sidebar:
-    st.title("⚙️ Engine Room")
-    model_choice = st.selectbox(
-        "Telegraph Frequency:", 
-        ["gemini-3-flash", "gemini-2.0-flash-lite"]
-    )
-    
-query_params = st.query_params
-p_name = query_params.get("p", "Capt. E.J. Smith") 
-person = passengers_dict.get(p_name, passengers_dict.get("Capt. E.J. Smith"))
-
-st.title(f"🚢 {p_name}")
-
-# Robust Image Extractor
+# --- 3. DEBUG VERSION OF IMAGE EXTRACTOR ---
 image_col = [c for c in passengers_df.columns if 'image' in c.lower()]
 if image_col:
     raw_url = person.get(image_col[0])
+    
+    # This will show you exactly what text is in the cell
+    st.write(f"DEBUG: I found the column '{image_col[0]}' and the text inside is: '{raw_url}'")
+    
     if isinstance(raw_url, str) and raw_url.strip().startswith("http"):
         clean_url = raw_url.strip()
         if "drive.google.com" in clean_url and "view" in clean_url:
