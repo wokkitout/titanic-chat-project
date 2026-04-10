@@ -6,6 +6,7 @@ st.set_page_config(page_title="Titanic Passenger Log", page_icon="🚢")
 st.markdown("""
     <style>
     .stApp { background-color: #f4ecd8; font-family: 'Courier New', Courier, monospace; }
+    [data-testid="stSidebar"] { background-color: #3e2723; color: white; }
     h1 { color: #3e2723; text-align: center; border-bottom: 2px solid #3e2723; font-variant: small-caps; }
     .stChatMessage { background-color: #ffffffaa; border-radius: 0px; border-left: 5px solid #3e2723; }
     </style>
@@ -13,35 +14,31 @@ st.markdown("""
 
 # --- 2. THE PASSENGER MANIFEST ---
 passengers = {
-    "astor": {"name": "John Jacob Astor IV", "bio": "Wealthy, returning from honeymoon. Protective of wife Madeleine. Aristocratic tone."},
+    "astor": {"name": "John Jacob Astor IV", "bio": "Wealthy, returning from honeymoon. Protective of wife Madeleine."},
     "molly": {"name": "Margaret 'Molly' Brown", "bio": "Denver socialite. Outspoken, brave, 'new money' heart of gold."},
-    "smith": {"name": "Capt. E.J. Smith", "bio": "Captain on retirement voyage. Authoritative, weary, proud of his command."},
+    "smith": {"name": "Capt. E.J. Smith", "bio": "Captain on retirement voyage. Authoritative, weary, proud."},
 }
 
-# --- 3. IDENTIFY PASSENGER ---
+# --- 3. THE "TELEGRAPH" SIDEBAR (The Fix) ---
+with st.sidebar:
+    st.title("⚙️ Engine Room")
+    # In 2026, one of these THREE will work for your account
+    model_choice = st.selectbox(
+        "Select Telegraph Frequency:",
+        ["gemini-2-flash", "gemini-3-flash-preview", "gemini-2.0-flash-lite"],
+        help="If one gives a 404 error, try the next one in the list!"
+    )
+    st.info("April 10, 1912 - Position: 41.73 N, 49.95 W")
+
 query_params = st.query_params
 p_id = query_params.get("p", "smith") 
 person = passengers.get(p_id, passengers["smith"])
 
 st.title(f"🚢 {person['name']}")
-st.write(f"*RMS Titanic — April 1912*")
 
-# --- 4. THE SMART API SETUP ---
+# --- 4. API SETUP ---
 if "GOOGLE_API_KEY" in st.secrets:
     client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
-
-    # --- AUTO-DETECT THE BEST MODEL ---
-    if "active_model" not in st.session_state:
-        try:
-            # Look at what your key is actually allowed to use
-            available_models = [m.name for m in client.models.list() if 'generateContent' in m.supported_variants]
-            # Priority list for 2026
-            priority = ["gemini-3-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
-            
-            # Pick the first one that matches your account
-            st.session_state.active_model = next((m for m in priority if any(m in avail for avail in available_models)), "gemini-1.5-flash")
-        except:
-            st.session_state.active_model = "gemini-1.5-flash" # Fallback
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -55,12 +52,12 @@ if "GOOGLE_API_KEY" in st.secrets:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        system_prompt = f"You are {person['name']}. {person['bio']} It is April 1912. Do not know the ship will sink. Stay in character."
+        system_prompt = f"You are {person['name']}. {person['bio']} It is April 1912. Stay in character."
         
         try:
-            # Use the model we auto-detected
+            # We use the model you picked in the sidebar
             response = client.models.generate_content(
-                model=st.session_state.active_model,
+                model=model_choice,
                 config={'system_instruction': system_prompt},
                 contents=prompt
             )
@@ -69,7 +66,8 @@ if "GOOGLE_API_KEY" in st.secrets:
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
         except Exception as e:
-            st.error(f"The telegraph line is cut! Error: {e}")
-            st.info(f"Tried using model: {st.session_state.active_model}")
+            st.error(f"Telegraph Frequency {model_choice} is jammed!")
+            st.warning(f"Technical Reason: {e}")
+            st.info("Try selecting a different frequency in the sidebar.")
 else:
     st.error("Missing API Key in Secrets!")
