@@ -23,15 +23,26 @@ person = passengers_data.get(p_name, passengers_data["Capt. E.J. Smith"])
 
 st.title(f"🚢 {p_name}")
 
-# --- 3. EXTRACT AND DISPLAY IMAGE ---
-# We use pd.isna() to check if the cell is empty before trying to use it
-import pandas as pd 
+# --- 3. EXTRACT AND DISPLAY IMAGE (The "No More Errors" Version) ---
+# This looks for the column name even if there are weird spaces or characters
+image_col = [c for c in passengers_df.columns if 'image' in c.lower()]
 
-image_url = person.get("@images (File Path)")
-
-# This checks: Is it a string? Is it NOT empty? Does it start with http?
-if isinstance(image_url, str) and not pd.isna(image_url) and image_url.startswith("http"):
-    st.image(image_url, width=250)
-else:
-    # Optional: show a placeholder boat if no image is found
-    st.info("No portrait available in the ship's archives.")
+if image_col:
+    raw_url = person.get(image_col[0])
+    
+    # 1. Clean up the link (removes accidental spaces from the spreadsheet)
+    if isinstance(raw_url, str):
+        clean_url = raw_url.strip()
+        
+        # 2. Check if it's a valid link
+        if clean_url.startswith("http"):
+            # 3. Handle Google Drive "Share" links (they usually don't work in st.image directly)
+            if "drive.google.com" in clean_url and "view" in clean_url:
+                # This converts a 'view' link into a 'direct' link
+                clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
+            
+            st.image(clean_url, width=300)
+        else:
+            st.info("The link in the spreadsheet doesn't look like a standard web address (http).")
+    else:
+        st.info("No portrait link found in the archives for this passenger.")
