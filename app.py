@@ -81,3 +81,7 @@ if prompt := st.chat_input("Speak to the passenger..."):
                 with st.chat_message("assistant"):
                     st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
+            else:
+                st.warning("The passenger is silent. Try again.")
+        except Exception as e:
+            st.error(f"Telegraph error: {e}")
