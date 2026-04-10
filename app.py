@@ -83,4 +83,4 @@ if prompt := st.chat_input("Speak to the passenger..."):
 
         # Prepare instructions
         bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
-        instructions = f"You are {person['Name']
+        instructions
