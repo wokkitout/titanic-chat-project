@@ -16,6 +16,7 @@ passengers = {
     "astor": {"name": "John Jacob Astor IV", "bio": "Wealthy, returning from honeymoon in Egypt. Protective of wife Madeleine. Aristocratic tone."},
     "molly": {"name": "Margaret 'Molly' Brown", "bio": "Denver socialite, rushing home for ill grandson. Outspoken, brave, 'new money' heart of gold."},
     "smith": {"name": "Capt. E.J. Smith", "bio": "Captain on retirement voyage. Authoritative, weary, proud of his command."},
+    # Add more passengers here as you wish!
 }
 
 # --- 3. IDENTIFY PASSENGER ---
@@ -24,10 +25,11 @@ p_id = query_params.get("p", "smith")
 person = passengers.get(p_id, passengers["smith"])
 
 st.title(f"🚢 {person['name']}")
-st.write(f"*RMS Titanic — Mid-Atlantic — April 10, 1912*")
+st.write(f"*RMS Titanic — April 10, 1912*")
 
-# --- 4. API SETUP (2026 STABLE VERSION) ---
+# --- 4. API SETUP (2026 MODERN VERSION) ---
 if "GOOGLE_API_KEY" in st.secrets:
+    # We are using the modern 'google-genai' library you installed
     client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
 
     if "messages" not in st.session_state:
@@ -42,13 +44,13 @@ if "GOOGLE_API_KEY" in st.secrets:
         with st.chat_message("user"):
             st.markdown(prompt)
 
+        # The "Secret Instruction" that creates the personality
         system_prompt = f"You are {person['name']}. {person['bio']} It is April 1912. You do not know the ship will sink. Stay in character."
         
         try:
-            # We are switching to gemini-2.5-flash (STABLE)
-            # Or use "gemini-3-flash-preview" for the absolute newest.
+            # SWITCHING TO THE 2026 STABLE MODEL
             response = client.models.generate_content(
-               model="gemini-2.0-flash",
+                model="gemini-3-flash",
                 config={'system_instruction': system_prompt},
                 contents=prompt
             )
@@ -57,7 +59,6 @@ if "GOOGLE_API_KEY" in st.secrets:
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
         except Exception as e:
-            # If 2.5 fails, it will show the reason here
             st.error(f"The telegraph is sputtering! {e}")
 else:
     st.error("Missing API Key in Streamlit Secrets!")
