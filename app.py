@@ -49,7 +49,7 @@ if isinstance(image_url, str) and image_url.strip().startswith("http"):
         clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
     st.image(clean_url, width=300)
 
-# --- 5. CHAT LOGIC ---
+# --- 5. CHAT LOGIC WITH AUTO-TUNING ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -66,17 +66,36 @@ if prompt := st.chat_input("Speak to the passenger..."):
         st.error("Missing GOOGLE_API_KEY in Secrets!")
     else:
         try:
-            # 1. Configure the classic library
+            # Configure the API right away
             genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
             
-            # 2. Build the instruction manual for the AI
+            # Auto-fetch available models for your specific API key
+            available_models = []
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    # Remove the 'models/' prefix so it looks clean
+                    available_models.append(m.name.replace('models/', ''))
+            
+            if not available_models:
+                st.error("Your API key is valid, but it has no AI models enabled on it!")
+                st.stop()
+
+            # Automatically pick the best available model from your personal list
+            # It will prioritize gemini-1.5-flash if it exists, otherwise it grabs the first one
+            best_model = next((m for m in available_models if '1.5-flash' in m), available_models[0])
+
+            # Sidebar display (so you can see what it actually found)
+            with st.sidebar:
+                st.title("⚙️ Engine Room")
+                st.success(f"Successfully connected to: {best_model}")
+                st.write("Other available frequencies:")
+                st.write(available_models)
+
+            # Build instructions and generate response
             bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
             instructions = f"You are {person['Name']}. {bio} It is April 1912. Stay in character."
             
-            # 3. Create the model using the stable string
-            model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=instructions)
-
-            # 4. Generate the response
+            model = genai.GenerativeModel(best_model, system_instruction=instructions)
             response = model.generate_content(prompt)
 
             if response and response.text:
