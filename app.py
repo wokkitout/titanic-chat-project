@@ -25,7 +25,6 @@ def load_data():
     data_dict = df.set_index('Name_Lower').to_dict('index')
     return data_dict
 
-# Load data first so the rest of the script knows what is happening
 try:
     passengers_dict = load_data()
 except Exception as e:
@@ -41,7 +40,7 @@ if not person:
     st.error("Passenger not found in the manifest.")
     st.stop()
 
-# --- 4. UI DISPLAY (Now we can safely use 'person') ---
+# --- 4. UI DISPLAY ---
 st.markdown(f"## 🚢 {person['Name']}", help="This passenger's details are pulled from the 1912 manifest.")
 
 image_url = person.get("ImageLink")
@@ -56,15 +55,17 @@ else:
 # --- 5. CHAT LOGIC ---
 with st.sidebar:
     st.title("⚙️ Engine Room")
+    # Using stable production model IDs for 2026
     model_choice = st.selectbox("Telegraph Frequency:", ["gemini-3-flash", "gemini-1.5-flash"])
 
 if "GOOGLE_API_KEY" in st.secrets:
+    # Initialize the modern stable client
     client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
     
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Indented block for the history loop
+    # FIX: Ensure the lines below the 'for' loop are indented!
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -76,19 +77,3 @@ if "GOOGLE_API_KEY" in st.secrets:
 
         bio_text = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
         system_instructions = f"You are {person['Name']}. {bio_text} It is April 14, 1912. Stay in character."
-        
-        try:
-            response = client.models.generate_content(
-                model=model_choice,
-                contents=prompt,
-                config={'system_instruction': system_instructions}
-            )
-            
-            if response.text:
-                with st.chat_message("assistant"):
-                    st.markdown(response.text)
-                    st.session_state.messages.append({"role": "assistant", "content": response.text})
-        except Exception as e:
-            st.error(f"Telegraph error: {e}")
-else:
-    st.error("Missing GOOGLE_API_KEY in Streamlit Secrets!")
