@@ -55,8 +55,8 @@ else:
 # --- 5. CHAT LOGIC ---
 with st.sidebar:
     st.title("⚙️ Engine Room")
-    # Using the stable 2026 production IDs
-    model_choice = st.selectbox("Telegraph Frequency:", ["gemini-2.0-flash", "gemini-1.5-flash"])
+    # Updated to the 2026 Stable Models
+    model_choice = st.selectbox("Telegraph Frequency:", ["gemini-3-flash", "gemini-1.5-flash"])
 
 if "GOOGLE_API_KEY" in st.secrets:
     client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
@@ -71,24 +71,4 @@ if "GOOGLE_API_KEY" in st.secrets:
     if prompt := st.chat_input("Speak to the passenger..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # FIX: Ensure this f-string is one continuous line to avoid SyntaxErrors
-        bio_text = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
-        system_prompt = f"You are {person['Name']}. {bio_text} It is April 1912. Stay in character."
-        
-        try:
-            response = client.models.generate_content(
-                model=model_choice,
-                contents=prompt,
-                config={'system_instruction': system_prompt}
-            )
-            
-            if response.text:
-                with st.chat_message("assistant"):
-                    st.markdown(response.text)
-                    st.session_state.messages.append({"role": "assistant", "content": response.text})
-        except Exception as e:
-            st.error(f"Telegraph error: {e}")
-else:
-    st.error("Missing API Key in Streamlit Secrets!")
+            st.markdown
