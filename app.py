@@ -4,7 +4,8 @@ import pandas as pd
 
 # --- 1. CONNECT TO YOUR GOOGLE SHEET ---
 # Replace this with your Google Sheet URL
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv"
+# The 'gid' tells the app exactly which tab to read
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
 
 @st.cache_data
 def load_data():
