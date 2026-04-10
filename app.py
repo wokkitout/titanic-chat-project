@@ -73,7 +73,7 @@ st.write(f"*RMS Titanic — Mid-Atlantic — April 1912*")
 # --- 4. API SETUP ---
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-    model = genai.GenerativeModel("models/gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-3-flash")
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
