@@ -21,37 +21,41 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKu
 @st.cache_data
 def load_data():
     df = pd.read_csv(SHEET_URL)
-    data_dict = df.set_index('Name').to_dict('index')
-    return df, data_dict
+    # This makes name searching easier by ignoring capital letters
+    df['Name_Lower'] = df['Name'].str.lower().str.strip()
+    data_dict = df.set_index('Name_Lower').to_dict('index')
+    return data_dict
 
 try:
-    passengers_df, passengers_dict = load_data()
+    passengers_dict = load_data()
 except Exception as e:
     st.error(f"⚠️ Logbook connection failed: {e}")
     st.stop()
 
 # --- 3. IDENTIFY PASSENGER ---
 query_params = st.query_params
-p_name = query_params.get("p", "Capt. E.J. Smith") 
-person = passengers_dict.get(p_name, passengers_dict.get("Capt. E.J. Smith"))
+p_query = query_params.get("p", "Capt. E.J. Smith").lower().strip()
+
+# Look for the passenger, default to Captain if not found
+person = passengers_dict.get(p_query, passengers_dict.get("capt. e.j. smith"))
 
 if not person:
-    st.error("Manifest error.")
+    st.error("Passenger not found in the manifest.")
     st.stop()
 
-st.title(f"🚢 {p_name}")
+st.title(f"🚢 {person['Name']}")
 
-# --- 4. IMAGE EXTRACTOR ---
-image_col = [c for c in passengers_df.columns if 'image' in c.lower()]
-if image_col:
-    raw_url = person.get(image_col[0])
-    if isinstance(raw_url, str) and raw_url.strip().startswith("http"):
-        clean_url = raw_url.strip()
-        if "drive.google.com" in clean_url and "view" in clean_url:
-            clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
-        st.image(clean_url, width=300)
-    else:
-        st.info("No portrait found in the archives for this passenger.")
+# --- 4. IMAGE EXTRACTOR (Matching your 'ImageLink' column) ---
+image_url = person.get("ImageLink")
+
+if isinstance(image_url, str) and image_url.strip().startswith("http"):
+    clean_url = image_url.strip()
+    # Auto-fix for Google Drive links
+    if "drive.google.com" in clean_url and "view" in clean_url:
+        clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
+    st.image(clean_url, width=300)
+else:
+    st.info("No portrait found. Check the 'ImageLink' column in your sheet!")
 
 # --- 5. CHAT LOGIC ---
 with st.sidebar:
@@ -73,10 +77,10 @@ if "GOOGLE_API_KEY" in st.secrets:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        bio_col = [c for c in passengers_df.columns if 'bio' in c.lower() or 'roleplay' in c.lower()]
-        bio_text = person.get(bio_col[0], "A passenger on the Titanic.") if bio_col else "A passenger."
+        # Matches your column 'Bio & Roleplay (The Narrative)'
+        bio_text = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
         
-        system_prompt = f"You are {p_name}. {bio_text} It is April 1912. Stay in character."
+        system_prompt = f"You are {person['Name']}. {bio_text} It is April 1912. Stay in character."
         
         try:
             response = client.models.generate_content(
