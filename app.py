@@ -44,27 +44,27 @@ if not person:
 
 st.markdown(f"## 🚢 {person['Name']}")
 
-# --- 4. IMAGE DISPLAY (ULTRA COMPATIBLE) ---
+# --- 4. IMAGE DISPLAY (DEBUG VERSION) ---
 image_url = person.get("ImageLink")
 
-if isinstance(image_url, str) and image_url.strip().startswith("http"):
+# Print the actual link to the screen so we can see if it's empty/wrong
+# You can remove this line once we find the bug!
+st.write(f"DEBUG: Link in sheet is: '{image_url}'")
+
+if isinstance(image_url, str) and len(image_url.strip()) > 10:
     url = image_url.strip()
     
-    # Only run the Drive cleaner if it's actually a Drive link
+    # Simple logic: If it's Drive, convert it. If not, use as-is.
     if "drive.google.com" in url:
         import re
         id_match = re.search(r'[-\w]{25,}', url)
-        if id_match:
-            clean_url = f"https://drive.google.com/thumbnail?id={id_match.group()}&sz=w1000"
-        else:
-            clean_url = url
+        clean_url = f"https://drive.google.com/thumbnail?id={id_match.group()}&sz=w1000" if id_match else url
     else:
-        # If it's Postimg or anything else, use it exactly as it is
         clean_url = url
         
     st.image(clean_url, width=300)
 else:
-    st.info("Logbook photo currently being processed...")
+    st.warning("No valid image link found for this passenger in the Google Sheet.")
 # --- 5. SECRETS & ENGINE ROOM (FIXED MODEL LOGIC) ---
 if "GOOGLE_API_KEY" not in st.secrets:
     st.error("Missing GOOGLE_API_KEY!")
