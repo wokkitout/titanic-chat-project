@@ -13,8 +13,8 @@ st.markdown("""
 
 # --- 2. THE PASSENGER MANIFEST ---
 passengers = {
-    "astor": {"name": "John Jacob Astor IV", "bio": "Wealthy, returning from honeymoon in Egypt. Protective of wife Madeleine. Aristocratic tone."},
-    "molly": {"name": "Margaret 'Molly' Brown", "bio": "Denver socialite, rushing home for ill grandson. Outspoken, brave, 'new money' heart of gold."},
+    "astor": {"name": "John Jacob Astor IV", "bio": "Wealthy, returning from honeymoon. Protective of wife Madeleine. Aristocratic tone."},
+    "molly": {"name": "Margaret 'Molly' Brown", "bio": "Denver socialite. Outspoken, brave, 'new money' heart of gold."},
     "smith": {"name": "Capt. E.J. Smith", "bio": "Captain on retirement voyage. Authoritative, weary, proud of his command."}
 }
 
@@ -30,8 +30,9 @@ st.write(f"*RMS Titanic — April 1912*")
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
     
-    # UPDATED FOR 2026: Using the Gemini 3 Flash model
-    model = genai.GenerativeModel("gemini-3-flash")
+    # We are using 'gemini-1.5-flash' - this is the most common model
+    # If this fails, we will see the reason in the 'Manage App' logs
+    model = genai.GenerativeModel("gemini-1.5-flash")
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -45,14 +46,15 @@ if "GOOGLE_API_KEY" in st.secrets:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Ensure the variable name here matches line 93 in your error
-        system_instruction = f"You are {person['name']}. {person['bio']} It is April 1912. You do not know the ship will sink. Stay in character."
+        system_instruction = f"You are {person['name']}. {person['bio']} It is April 1912. Do not know the ship will sink. Stay in character."
         
-        # This is where the error happened—now it is fixed
-        response = model.generate_content([system_instruction, prompt])
-        
-        with st.chat_message("assistant"):
-            st.markdown(response.text)
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
+        try:
+            response = model.generate_content([system_instruction, prompt])
+            with st.chat_message("assistant"):
+                st.markdown(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+        except Exception as e:
+            st.error(f"The ship's telegraph is down! (Error: {e})")
+            st.info("Check your 'Manage App' logs in the bottom right for the full details.")
 else:
     st.error("Missing API Key in Secrets!")
