@@ -54,20 +54,47 @@ if "GOOGLE_API_KEY" not in st.secrets:
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
 # --- 6. CHAT LOGIC ---
-# Generate response WITH STREAMING TURNED ON
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+if prompt := st.chat_input("Speak to the passenger..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    try:
+        available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        
+        if not available_models:
+            st.error("Your API key has no models enabled!")
+            st.stop()
+
+        best_model = next((m for m in available_models if '2.5-flash' in m), available_models[0])
+        bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
+        instructions = f"You are {person['Name']}. {bio} It is April 1912. Stay in character."
+        
+        model = genai.GenerativeModel(best_model, system_instruction=instructions)
+        
+        # We turn streaming ON here
         response = model.generate_content(prompt, stream=True)
 
-        # Display response with a "typing" effect
+        # This handles the typewriter effect
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             full_response = ""
-            
-            # Print the words to the screen as they arrive over the telegraph
             for chunk in response:
-                full_response += chunk.text
-                message_placeholder.markdown(full_response + "▌")
+                # We check if the chunk has text before adding it to avoid errors
+                if chunk.text: 
+                    full_response += chunk.text
+                    message_placeholder.markdown(full_response + "▌")
             
-            # Remove the little block cursor when finished
             message_placeholder.markdown(full_response)
             
         st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
+    except Exception as e:
+        st.error(f"Telegraph error: {e}")
