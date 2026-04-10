@@ -22,8 +22,7 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKu
 def load_data():
     df = pd.read_csv(SHEET_URL)
     df['Name_Lower'] = df['Name'].str.lower().str.strip()
-    data_dict = df.set_index('Name_Lower').to_dict('index')
-    return data_dict
+    return df.set_index('Name_Lower').to_dict('index')
 
 try:
     passengers_dict = load_data()
@@ -37,43 +36,42 @@ p_query = query_params.get("p", "Capt. E.J. Smith").lower().strip()
 person = passengers_dict.get(p_query, passengers_dict.get("capt. e.j. smith"))
 
 if not person:
-    st.error("Passenger not found in the manifest.")
+    st.error("Passenger not found.")
     st.stop()
 
-# --- 4. UI DISPLAY ---
-st.markdown(f"## 🚢 {person['Name']}", help="This passenger's details are pulled from the 1912 manifest.")
+st.markdown(f"## 🚢 {person['Name']}")
 
+# --- 4. IMAGE DISPLAY ---
 image_url = person.get("ImageLink")
 if isinstance(image_url, str) and image_url.strip().startswith("http"):
     clean_url = image_url.strip()
     if "drive.google.com" in clean_url and "view" in clean_url:
         clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
     st.image(clean_url, width=300)
-else:
-    st.info("No portrait found in the ship's archives.")
 
 # --- 5. CHAT LOGIC ---
-with st.sidebar:
-    st.title("⚙️ Engine Room")
-    # Using stable production model IDs for 2026
-    model_choice = st.selectbox("Telegraph Frequency:", ["gemini-3-flash", "gemini-1.5-flash"])
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-if "GOOGLE_API_KEY" in st.secrets:
-    # Initialize the modern stable client
-    client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
-    
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+# Display history
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-    # FIX: Ensure the lines below the 'for' loop are indented!
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+if prompt := st.chat_input("Speak to the passenger..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-    if prompt := st.chat_input("Speak to the passenger..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        bio_text = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
-        system_instructions = f"You are {person['Name']}. {bio_text} It is April 14, 1912. Stay in character."
+    # API Key Check
+    if "GOOGLE_API_KEY" not in st.secrets:
+        st.error("Missing GOOGLE_API_KEY in Secrets!")
+    else:
+        try:
+            client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
+            
+            # Identify model from sidebar or default
+            model_id = "gemini-1.5-flash" # Defaulting to the most stable one
+            
+            bio = person.get("Bio & Roleplay (The Narrative)", "A passenger.")
+            instructions = f"You are {person['Name']}. {bio} It is
