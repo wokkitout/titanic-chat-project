@@ -2,7 +2,7 @@ import streamlit as st
 from google import genai
 import pandas as pd
 
-# --- 1. VINTAGE STYLING ---
+# --- 1. VINTAGE STYLING (Black Text Fix) ---
 st.set_page_config(page_title="Titanic Passenger Log", page_icon="🚢")
 st.markdown("""
     <style>
@@ -15,13 +15,13 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. DATA LOADING ---
+# --- 2. DATA LOADING (Google Sheets) ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
 
 @st.cache_data
 def load_data():
     df = pd.read_csv(SHEET_URL)
-    # This makes name searching easier by ignoring capital letters
+    # Normalize names for easier URL matching
     df['Name_Lower'] = df['Name'].str.lower().str.strip()
     data_dict = df.set_index('Name_Lower').to_dict('index')
     return data_dict
@@ -35,8 +35,6 @@ except Exception as e:
 # --- 3. IDENTIFY PASSENGER ---
 query_params = st.query_params
 p_query = query_params.get("p", "Capt. E.J. Smith").lower().strip()
-
-# Look for the passenger, default to Captain if not found
 person = passengers_dict.get(p_query, passengers_dict.get("capt. e.j. smith"))
 
 if not person:
@@ -45,24 +43,24 @@ if not person:
 
 st.title(f"🚢 {person['Name']}")
 
-# --- 4. IMAGE EXTRACTOR (Matching your 'ImageLink' column) ---
+# --- 4. IMAGE DISPLAY (Column D) ---
 image_url = person.get("ImageLink")
-
 if isinstance(image_url, str) and image_url.strip().startswith("http"):
     clean_url = image_url.strip()
-    # Auto-fix for Google Drive links
     if "drive.google.com" in clean_url and "view" in clean_url:
         clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
     st.image(clean_url, width=300)
 else:
-    st.info("No portrait found. Check the 'ImageLink' column in your sheet!")
+    st.info("No portrait found in the ship's archives.")
 
-# --- 5. CHAT LOGIC ---
+# --- 5. CHAT LOGIC (Fixed 404 Error) ---
 with st.sidebar:
     st.title("⚙️ Engine Room")
-    model_choice = st.selectbox("Frequency:", ["gemini-3-flash", "gemini-2.0-flash-lite"])
+    # Updated model names for the 2026 API
+    model_choice = st.selectbox("Telegraph Frequency:", ["gemini-3-flash", "gemini-2-flash"])
 
 if "GOOGLE_API_KEY" in st.secrets:
+    # Initialize the modern 2026 client
     client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
     
     if "messages" not in st.session_state:
@@ -77,21 +75,12 @@ if "GOOGLE_API_KEY" in st.secrets:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Matches your column 'Bio & Roleplay (The Narrative)'
-        bio_text = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
-        
+        # Pull narrative from Column E
+        bio_text = person.get("Bio & Roleplay (The Narrative)", "A mysterious passenger on the Titanic.")
         system_prompt = f"You are {person['Name']}. {bio_text} It is April 1912. Stay in character."
         
         try:
+            # Generate content using the modern client structure
             response = client.models.generate_content(
                 model=model_choice,
-                config={'system_instruction': system_prompt},
-                contents=prompt
-            )
-            with st.chat_message("assistant"):
-                st.markdown(response.text)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
-        except Exception as e:
-            st.error(f"Telegraph error: {e}")
-else:
-    st.error("Missing API Key in Secrets!")
+                contents=prompt,
