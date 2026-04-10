@@ -53,25 +53,27 @@ if isinstance(image_url, str) and image_url.strip().startswith("http"):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display history
+# Display conversation history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# User Input
 if prompt := st.chat_input("Speak to the passenger..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # API Key Check
+    # API Logic
     if "GOOGLE_API_KEY" not in st.secrets:
-        st.error("Missing GOOGLE_API_KEY in Secrets!")
+        st.error("Missing GOOGLE_API_KEY in Streamlit Secrets!")
     else:
         try:
             client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
             
-            # Identify model from sidebar or default
-            model_id = "gemini-1.5-flash" # Defaulting to the most stable one
+            # Use the stable model ID
+            model_id = "gemini-1.5-flash"
             
-            bio = person.get("Bio & Roleplay (The Narrative)", "A passenger.")
-            instructions = f"You are {person['Name']}. {bio} It is
+            bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
+            
+            # FIXED: This instruction is now one solid
