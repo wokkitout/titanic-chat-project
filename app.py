@@ -1,5 +1,5 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 
 # --- 1. VINTAGE STYLING ---
 st.set_page_config(page_title="Titanic Passenger Log", page_icon="🚢")
@@ -13,9 +13,10 @@ st.markdown("""
 
 # --- 2. THE PASSENGER MANIFEST ---
 passengers = {
-    "astor": {"name": "John Jacob Astor IV", "bio": "Wealthy, returning from honeymoon. Protective of wife Madeleine. Aristocratic tone."},
-    "molly": {"name": "Margaret 'Molly' Brown", "bio": "Denver socialite. Outspoken, brave, 'new money' heart of gold."},
-    "smith": {"name": "Capt. E.J. Smith", "bio": "Captain on retirement voyage. Authoritative, weary, proud of his command."}
+    "astor": {"name": "John Jacob Astor IV", "bio": "Wealthy, returning from honeymoon in Egypt. Protective of wife Madeleine. Aristocratic tone."},
+    "molly": {"name": "Margaret 'Molly' Brown", "bio": "Denver socialite, rushing home for ill grandson. Outspoken, brave, 'new money' heart of gold."},
+    "smith": {"name": "Capt. E.J. Smith", "bio": "Captain on retirement voyage. Authoritative, weary, proud of his command."},
+    # Add more passengers here following the same pattern!
 }
 
 # --- 3. IDENTIFY PASSENGER ---
@@ -24,15 +25,12 @@ p_id = query_params.get("p", "smith")
 person = passengers.get(p_id, passengers["smith"])
 
 st.title(f"🚢 {person['name']}")
-st.write(f"*RMS Titanic — April 1912*")
+st.write(f"*RMS Titanic — Mid-Atlantic — April 10, 1912*")
 
-# --- 4. API SETUP ---
+# --- 4. API SETUP (2026 MODERN VERSION) ---
 if "GOOGLE_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-    
-    # We are using 'gemini-1.5-flash' - this is the most common model
-    # If this fails, we will see the reason in the 'Manage App' logs
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    # Initialize the new 2026 Client
+    client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -46,15 +44,21 @@ if "GOOGLE_API_KEY" in st.secrets:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        system_instruction = f"You are {person['name']}. {person['bio']} It is April 1912. Do not know the ship will sink. Stay in character."
+        # The "Secret Instruction"
+        system_prompt = f"You are {person['name']}. {person['bio']} It is April 1912. You do not know the ship will sink. Stay in character."
         
         try:
-            response = model.generate_content([system_instruction, prompt])
+            # Using Gemini 3 Flash for your Paid Tier
+            response = client.models.generate_content(
+                model="gemini-3-flash",
+                config={'system_instruction': system_prompt},
+                contents=prompt
+            )
+            
             with st.chat_message("assistant"):
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
         except Exception as e:
-            st.error(f"The ship's telegraph is down! (Error: {e})")
-            st.info("Check your 'Manage App' logs in the bottom right for the full details.")
+            st.error(f"Telegraph error: {e}")
 else:
-    st.error("Missing API Key in Secrets!")
+    st.error("Missing API Key in Streamlit Secrets!")
