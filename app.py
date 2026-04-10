@@ -9,7 +9,6 @@ st.markdown("""
     .stApp { background-color: #f4ecd8; font-family: 'Courier New', Courier, monospace; }
     .stApp p, .stMarkdown, .stChatMessage, span, div, label { color: #000000 !important; }
     h1, h2, h3 { color: #3e2723 !important; text-align: center; border-bottom: 2px solid #3e2723; font-variant: small-caps; }
-    /* This completely hides the sidebar expander arrow */
     [data-testid="collapsedControl"] { display: none; }
     .stChatMessage { background-color: #ffffffcc !important; border-radius: 0px; border-left: 5px solid #3e2723; margin-bottom: 10px; }
     </style>
@@ -49,7 +48,14 @@ if isinstance(image_url, str) and image_url.strip().startswith("http"):
         clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
     st.image(clean_url, width=300)
 
-# --- 5. CHAT LOGIC ---
+# --- 5. SECRETS CHECK ---
+if "GOOGLE_API_KEY" not in st.secrets:
+    st.error("Missing GOOGLE_API_KEY in Secrets!")
+    st.stop()
+
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+
+# --- 6. CHAT LOGIC ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -62,22 +68,19 @@ if prompt := st.chat_input("Speak to the passenger..."):
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    if "GOOGLE_API_KEY" not in st.secrets:
-        st.error("Missing GOOGLE_API_KEY in Secrets!")
-    else:
-        try:
-            genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-            
-            available_models = []
-            for m in genai.list_models():
-                if 'generateContent' in m.supported_generation_methods:
-                    available_models.append(m.name.replace('models/', ''))
-            
-            if not available_models:
-                st.error("Your API key is valid, but it has no AI models enabled on it!")
-                st.stop()
+    try:
+        # Autopilot model selection
+        available_models = []
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                available_models.append(m.name.replace('models/', ''))
+        
+        if not available_models:
+            st.error("Your API key is valid, but it has no AI models enabled on it!")
+            st.stop()
 
-            # Autopilot: Grabs 2.5-flash based on your screenshot
-            best_model = next((m for m in available_models if '2.5-flash' in m), available_models[0])
+        best_model = next((m for m in available_models if '2.5-flash' in m), available_models[0])
 
-            bio = person
+        # Prepare instructions
+        bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
+        instructions = f"You are {person['Name']
