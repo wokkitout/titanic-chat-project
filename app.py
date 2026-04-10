@@ -19,7 +19,7 @@ header {visibility: hidden;}
     """, unsafe_allow_html=True)
 
 # --- 2. DATA LOADING ---
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782&cachebuster=1"
 
 @st.cache_data
 def load_data():
