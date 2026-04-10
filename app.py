@@ -4,16 +4,7 @@ import pandas as pd
 
 # --- 1. VINTAGE STYLING ---
 st.set_page_config(page_title="Titanic Passenger Log", page_icon="🚢")
-st.markdown("""
-    <style>
-    .stApp { background-color: #f4ecd8; font-family: 'Courier New', Courier, monospace; }
-    .stApp p, .stMarkdown, .stChatMessage, span, div, label { color: #000000 !important; }
-    h1 { color: #3e2723 !important; text-align: center; border-bottom: 2px solid #3e2723; font-variant: small-caps; }
-    [data-testid="stSidebar"] { background-color: #3e2723; }
-    [data-testid="stSidebar"] * { color: #ffffff !important; }
-    .stChatMessage { background-color: #ffffffcc !important; border-radius: 0px; border-left: 5px solid #3e2723; margin-bottom: 10px; }
-    </style>
-    """, unsafe_allow_html=True)
+st.markdown(f"### {person['Name']}", help="This passenger's details are pulled from the 1912 manifest.")
 
 # --- 2. DATA LOADING ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
