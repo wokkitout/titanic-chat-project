@@ -48,8 +48,6 @@ st.markdown(f"## 🚢 {person['Name']}")
 image_url = person.get("ImageLink")
 
 # Print the actual link to the screen so we can see if it's empty/wrong
-# You can remove this line once we find the bug!
-st.write(f"DEBUG: Link in sheet is: '{image_url}'")
 
 if isinstance(image_url, str) and len(image_url.strip()) > 10:
     url = image_url.strip()
