@@ -43,9 +43,7 @@ st.markdown(f"## 🚢 {person['Name']}")
 # --- 4. IMAGE DISPLAY ---
 image_url = person.get("ImageLink")
 if isinstance(image_url, str) and image_url.strip().startswith("http"):
-    clean_url = image_url.strip()
-    if "drive.google.com" in clean_url and "view" in clean_url:
-        clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
+    clean_url = image_url.strip().replace("/view", "/uc?export=download&id=").split("?")[0] if "drive.google.com" in image_url else image_url.strip()
     st.image(clean_url, width=300)
 
 # --- 5. SECRETS CHECK ---
@@ -69,18 +67,25 @@ if prompt := st.chat_input("Speak to the passenger..."):
         st.markdown(prompt)
 
     try:
-        # Autopilot model selection
-        available_models = []
-        for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods:
-                available_models.append(m.name.replace('models/', ''))
+        available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
         
         if not available_models:
-            st.error("Your API key is valid, but it has no AI models enabled on it!")
+            st.error("Your API key has no models enabled!")
             st.stop()
 
         best_model = next((m for m in available_models if '2.5-flash' in m), available_models[0])
-
-        # Prepare instructions
         bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
-        instructions
+        instructions = f"You are {person['Name']}. {bio} It is April 1912. Stay in character."
+        
+        model = genai.GenerativeModel(best_model, system_instruction=instructions)
+        response = model.generate_content(prompt)
+
+        if response and response.text:
+            with st.chat_message("assistant"):
+                st.markdown(response.text)
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
+        else:
+            st.warning("The passenger is silent. Try again.")
+            
+    except Exception as e:
+        st.error(f"Telegraph error: {e}")
