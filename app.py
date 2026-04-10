@@ -44,12 +44,20 @@ if not person:
 
 st.markdown(f"## 🚢 {person['Name']}")
 
-# --- 4. IMAGE DISPLAY ---
+# --- 4. IMAGE DISPLAY (ROBUST VERSION) ---
 image_url = person.get("ImageLink")
 if isinstance(image_url, str) and image_url.strip().startswith("http"):
     url = image_url.strip()
     if "drive.google.com" in url:
-        clean_url = url.replace("/view", "/uc?export=download&id=").split("?")[0]
+        # This regex/split logic pulls the ID out of any Drive link
+        try:
+            if "id=" in url:
+                file_id = url.split("id=")[1].split("&")[0]
+            else:
+                file_id = url.split("/d/")[1].split("/")[0]
+            clean_url = f"https://lh3.googleusercontent.com/u/0/d/{file_id}"
+        except:
+            clean_url = url # Fallback to original if it fails
     else:
         clean_url = url
     st.image(clean_url, width=300)
