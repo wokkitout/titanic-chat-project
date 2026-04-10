@@ -12,6 +12,9 @@ st.markdown("""
     [data-testid="stSidebar"] { background-color: #3e2723; color: white; }
     [data-testid="stSidebar"] * { color: white !important; }
     .stChatMessage { background-color: #ffffffcc !important; border-radius: 0px; border-left: 5px solid #3e2723; margin-bottom: 10px; }
+   #MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
