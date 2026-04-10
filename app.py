@@ -48,7 +48,7 @@ if "GOOGLE_API_KEY" in st.secrets:
             # We are switching to gemini-2.5-flash (STABLE)
             # Or use "gemini-3-flash-preview" for the absolute newest.
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+               model="gemini-2.0-flash",
                 config={'system_instruction': system_prompt},
                 contents=prompt
             )
