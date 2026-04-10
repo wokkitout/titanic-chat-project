@@ -2,18 +2,18 @@ import streamlit as st
 from google import genai
 import pandas as pd
 
-# --- 1. VINTAGE STYLING (Black Ink Fix) ---
+# --- 1. VINTAGE STYLING (The "Deep Ink" Fix) ---
 st.set_page_config(page_title="Titanic Passenger Log", page_icon="🚢")
 st.markdown("""
     <style>
-    /* Main background and global text color */
+    /* Force the background and the font */
     .stApp { 
         background-color: #f4ecd8; 
         font-family: 'Courier New', Courier, monospace; 
     }
     
-    /* Force ALL text elements to be deep black */
-    .stApp p, .stMarkdown, .stChatMessage, span, div, label { 
+    /* UNIVERSAL BLACK TEXT: This covers paragraphs, spans, headers, and chat */
+    .stApp p, .stMarkdown, .stChatMessage, span, div, label, .stChatFloatingInputContainer { 
         color: #000000 !important; 
     }
     
@@ -25,11 +25,11 @@ st.markdown("""
         font-variant: small-caps; 
     }
 
-    /* Sidebar styling */
+    /* Sidebar Styling */
     [data-testid="stSidebar"] { background-color: #3e2723; }
     [data-testid="stSidebar"] * { color: #ffffff !important; }
 
-    /* Chat message boxes */
+    /* Message Bubbles */
     .stChatMessage { 
         background-color: #ffffffcc !important; 
         border-radius: 0px; 
@@ -45,7 +45,6 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKu
 @st.cache_data
 def load_data():
     df = pd.read_csv(SHEET_URL)
-    # Create lowercase names for easier URL matching
     df['Name_Lower'] = df['Name'].str.lower().str.strip()
     data_dict = df.set_index('Name_Lower').to_dict('index')
     return data_dict
@@ -71,7 +70,6 @@ st.title(f"🚢 {person['Name']}")
 image_url = person.get("ImageLink")
 if isinstance(image_url, str) and image_url.strip().startswith("http"):
     clean_url = image_url.strip()
-    # Google Drive Direct Link Converter
     if "drive.google.com" in clean_url and "view" in clean_url:
         clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
     st.image(clean_url, width=300)
@@ -81,10 +79,11 @@ else:
 # --- 5. CHAT LOGIC ---
 with st.sidebar:
     st.title("⚙️ Engine Room")
-    # Switched to gemini-2-flash as the primary stable frequency
+    # Switched to the most stable 2026 frequencies to avoid 404 errors
     model_choice = st.selectbox("Telegraph Frequency:", ["gemini-2-flash", "gemini-1.5-flash"])
 
 if "GOOGLE_API_KEY" in st.secrets:
+    # Initialize the modern 2026 client
     client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
     
     if "messages" not in st.session_state:
@@ -101,20 +100,4 @@ if "GOOGLE_API_KEY" in st.secrets:
 
         # Pull narrative from Column E
         bio_text = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
-        system_prompt = f"You are {person['Name']}. {bio_text} It is April 1912. Stay in character."
-        
-        try:
-            response = client.models.generate_content(
-                model=model_choice,
-                contents=prompt,
-                config={'system_instruction': system_prompt}
-            )
-            
-            if response.text:
-                with st.chat_message("assistant"):
-                    st.markdown(response.text)
-                    st.session_state.messages.append({"role": "assistant", "content": response.text})
-        except Exception as e:
-            st.error(f"Telegraph error: {e}")
-else:
-    st.error("Missing API Key in Streamlit Secrets!")
+        system_prompt = f"You are {person['Name']}. {bio_text} It
