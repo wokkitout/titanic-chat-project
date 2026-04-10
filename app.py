@@ -13,10 +13,9 @@ st.markdown("""
 
 # --- 2. THE PASSENGER MANIFEST ---
 passengers = {
-    "astor": {"name": "John Jacob Astor IV", "bio": "Wealthy, returning from honeymoon in Egypt. Protective of wife Madeleine. Aristocratic tone."},
-    "molly": {"name": "Margaret 'Molly' Brown", "bio": "Denver socialite, rushing home for ill grandson. Outspoken, brave, 'new money' heart of gold."},
+    "astor": {"name": "John Jacob Astor IV", "bio": "Wealthy, returning from honeymoon. Protective of wife Madeleine. Aristocratic tone."},
+    "molly": {"name": "Margaret 'Molly' Brown", "bio": "Denver socialite. Outspoken, brave, 'new money' heart of gold."},
     "smith": {"name": "Capt. E.J. Smith", "bio": "Captain on retirement voyage. Authoritative, weary, proud of his command."},
-    # Add more passengers here as you wish!
 }
 
 # --- 3. IDENTIFY PASSENGER ---
@@ -25,12 +24,24 @@ p_id = query_params.get("p", "smith")
 person = passengers.get(p_id, passengers["smith"])
 
 st.title(f"🚢 {person['name']}")
-st.write(f"*RMS Titanic — April 10, 1912*")
+st.write(f"*RMS Titanic — April 1912*")
 
-# --- 4. API SETUP (2026 MODERN VERSION) ---
+# --- 4. THE SMART API SETUP ---
 if "GOOGLE_API_KEY" in st.secrets:
-    # We are using the modern 'google-genai' library you installed
     client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
+
+    # --- AUTO-DETECT THE BEST MODEL ---
+    if "active_model" not in st.session_state:
+        try:
+            # Look at what your key is actually allowed to use
+            available_models = [m.name for m in client.models.list() if 'generateContent' in m.supported_variants]
+            # Priority list for 2026
+            priority = ["gemini-3-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+            
+            # Pick the first one that matches your account
+            st.session_state.active_model = next((m for m in priority if any(m in avail for avail in available_models)), "gemini-1.5-flash")
+        except:
+            st.session_state.active_model = "gemini-1.5-flash" # Fallback
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -44,13 +55,12 @@ if "GOOGLE_API_KEY" in st.secrets:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # The "Secret Instruction" that creates the personality
-        system_prompt = f"You are {person['name']}. {person['bio']} It is April 1912. You do not know the ship will sink. Stay in character."
+        system_prompt = f"You are {person['name']}. {person['bio']} It is April 1912. Do not know the ship will sink. Stay in character."
         
         try:
-            # SWITCHING TO THE 2026 STABLE MODEL
+            # Use the model we auto-detected
             response = client.models.generate_content(
-                model="gemini-3-flash",
+                model=st.session_state.active_model,
                 config={'system_instruction': system_prompt},
                 contents=prompt
             )
@@ -59,6 +69,7 @@ if "GOOGLE_API_KEY" in st.secrets:
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
         except Exception as e:
-            st.error(f"The telegraph is sputtering! {e}")
+            st.error(f"The telegraph line is cut! Error: {e}")
+            st.info(f"Tried using model: {st.session_state.active_model}")
 else:
-    st.error("Missing API Key in Streamlit Secrets!")
+    st.error("Missing API Key in Secrets!")
