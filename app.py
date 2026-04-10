@@ -86,4 +86,28 @@ if prompt := st.chat_input("Speak to the passenger..."):
         bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
         instructions = f"You are {person['Name']}. {bio} It is April 1912. Stay in character. Keep responses brief."
         
-        model = genai
+        model = genai.GenerativeModel(best_model, system_instruction=instructions)
+        
+        response = model.generate_content(
+            prompt, 
+            stream=True,
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=300,
+                temperature=0.7
+            )
+        )
+
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            full_response = ""
+            for chunk in response:
+                if chunk.text: 
+                    full_response += chunk.text
+                    message_placeholder.markdown(full_response + "▌")
+            
+            message_placeholder.markdown(full_response)
+            
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
+    except Exception as e:
+        st.error(f"Telegraph error: {e}")
