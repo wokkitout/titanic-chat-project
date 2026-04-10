@@ -9,8 +9,8 @@ st.markdown("""
     .stApp { background-color: #f4ecd8; font-family: 'Courier New', Courier, monospace; }
     .stApp p, .stMarkdown, .stChatMessage, span, div, label { color: #000000 !important; }
     h1, h2, h3 { color: #3e2723 !important; text-align: center; border-bottom: 2px solid #3e2723; font-variant: small-caps; }
-    [data-testid="stSidebar"] { background-color: #3e2723; }
-    [data-testid="stSidebar"] * { color: #ffffff !important; }
+    /* Hide the sidebar expander button just in case */
+    [data-testid="collapsedControl"] { display: none; }
     .stChatMessage { background-color: #ffffffcc !important; border-radius: 0px; border-left: 5px solid #3e2723; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
@@ -49,7 +49,7 @@ if isinstance(image_url, str) and image_url.strip().startswith("http"):
         clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
     st.image(clean_url, width=300)
 
-# --- 5. CHAT LOGIC WITH AUTO-TUNING ---
+# --- 5. CHAT LOGIC (CLEAN UI) ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -66,44 +66,12 @@ if prompt := st.chat_input("Speak to the passenger..."):
         st.error("Missing GOOGLE_API_KEY in Secrets!")
     else:
         try:
-            # Configure the API right away
             genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
             
-            # Auto-fetch available models for your specific API key
+            # Silently fetch available models
             available_models = []
             for m in genai.list_models():
                 if 'generateContent' in m.supported_generation_methods:
-                    # Remove the 'models/' prefix so it looks clean
                     available_models.append(m.name.replace('models/', ''))
             
-            if not available_models:
-                st.error("Your API key is valid, but it has no AI models enabled on it!")
-                st.stop()
-
-            # Automatically pick the best available model from your personal list
-            # It will prioritize gemini-1.5-flash if it exists, otherwise it grabs the first one
-            best_model = next((m for m in available_models if '1.5-flash' in m), available_models[0])
-
-            # Sidebar display (so you can see what it actually found)
-            with st.sidebar:
-                st.title("⚙️ Engine Room")
-                st.success(f"Successfully connected to: {best_model}")
-                st.write("Other available frequencies:")
-                st.write(available_models)
-
-            # Build instructions and generate response
-            bio = person.get("Bio & Roleplay (The Narrative)", "A passenger on the Titanic.")
-            instructions = f"You are {person['Name']}. {bio} It is April 1912. Stay in character."
-            
-            model = genai.GenerativeModel(best_model, system_instruction=instructions)
-            response = model.generate_content(prompt)
-
-            if response and response.text:
-                with st.chat_message("assistant"):
-                    st.markdown(response.text)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
-            else:
-                st.warning("The passenger is silent. Try again.")
-                
-        except Exception as e:
-            st.error(f"Telegraph error: {e}")
+            if not available_
