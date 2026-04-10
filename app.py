@@ -1,11 +1,9 @@
 import streamlit as st
 import google.generativeai as genai
 import pandas as pd
-import urllib.parse
-import qrcode
 
 # --- 1. VINTAGE STYLING ---
-st.set_page_config(page_title="Titanic Passenger Log", page_icon="🚢", layout="centered")
+st.set_page_config(page_title="Titanic Passenger Log", page_icon="🚢")
 st.markdown("""
     <style>
     .stApp { background-color: #f4ecd8; font-family: 'Courier New', Courier, monospace; }
@@ -48,21 +46,6 @@ if isinstance(image_url, str) and image_url.strip().startswith("http"):
     clean_url = image_url.strip().replace("/view", "/uc?export=download&id=").split("?")[0] if "drive.google.com" in image_url else image_url.strip()
     st.image(clean_url, width=300)
 
-# IMPORTANT: Replace this with your actual Streamlit App URL!
-BASE_URL = "https://your-repo-name.streamlit.app/"
-
-with col1:
-    image_url = person.get("ImageLink")
-    if isinstance(image_url, str) and image_url.strip().startswith("http"):
-        clean_url = image_url.strip().replace("/view", "/uc?export=download&id=").split("?")[0] if "drive.google.com" in image_url else image_url.strip()
-        st.image(clean_url, width=300)
-
-with col2:
-    safe_name = urllib.parse.quote(person['Name'])
-    passenger_url = f"{BASE_URL}?p={safe_name}"
-    qr = qrcode.make(passenger_url)
-    st.image(qr.get_image(), width=150, caption="Scan to open Telegraph")
-
 # --- 5. SECRETS CHECK ---
 if "GOOGLE_API_KEY" not in st.secrets:
     st.error("Missing GOOGLE_API_KEY in Secrets!")
@@ -70,7 +53,7 @@ if "GOOGLE_API_KEY" not in st.secrets:
 
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
-# --- 6. CHAT LOGIC (FAST STREAMING) ---
+# --- 6. CHAT LOGIC ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -95,13 +78,16 @@ if prompt := st.chat_input("Speak to the passenger..."):
         instructions = f"You are {person['Name']}. {bio} It is April 1912. Stay in character."
         
         model = genai.GenerativeModel(best_model, system_instruction=instructions)
+        
+        # Streaming is turned ON here
         response = model.generate_content(prompt, stream=True)
 
+        # Handles the typewriter effect
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             full_response = ""
             for chunk in response:
-                if chunk.text:
+                if chunk.text: 
                     full_response += chunk.text
                     message_placeholder.markdown(full_response + "▌")
             
