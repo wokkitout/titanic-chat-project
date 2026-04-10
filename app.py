@@ -2,7 +2,7 @@ import streamlit as st
 from google import genai
 import pandas as pd
 
-# --- 1. VINTAGE STYLING (The Black Ink Fix) ---
+# --- 1. VINTAGE STYLING ---
 st.set_page_config(page_title="Titanic Passenger Log", page_icon="🚢")
 st.markdown("""
     <style>
@@ -20,13 +20,13 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKu
 
 @st.cache_data
 def load_data():
-    # Load the sheet into a dataframe
+    # Fetch the sheet
     df = pd.read_csv(SHEET_URL)
-    # Create a dictionary for easy lookups
+    # Create a dictionary where the index is the Name column
     data_dict = df.set_index('Name').to_dict('index')
     return df, data_dict
 
-# Initialize the data
+# Initialize data
 try:
     passengers_df, passengers_dict = load_data()
 except Exception as e:
@@ -36,7 +36,10 @@ except Exception as e:
 # --- 3. PASSENGER & IMAGE IDENTIFICATION ---
 with st.sidebar:
     st.title("⚙️ Engine Room")
-    model_choice = st.selectbox("Telegraph Frequency:", ["gemini-3-flash", "gemini-2.0-flash-lite"])
+    model_choice = st.selectbox(
+        "Telegraph Frequency:", 
+        ["gemini-3-flash", "gemini-2.0-flash-lite"]
+    )
     
 query_params = st.query_params
 p_name = query_params.get("p", "Capt. E.J. Smith") 
@@ -50,7 +53,6 @@ if image_col:
     raw_url = person.get(image_col[0])
     if isinstance(raw_url, str) and raw_url.strip().startswith("http"):
         clean_url = raw_url.strip()
-        # Auto-fix for Google Drive links
         if "drive.google.com" in clean_url and "view" in clean_url:
             clean_url = clean_url.replace("/view", "/uc?export=download&id=").split("?")[0]
         st.image(clean_url, width=300)
@@ -60,11 +62,38 @@ if image_col:
 # --- 4. CHAT LOGIC ---
 if "GOOGLE_API_KEY" in st.secrets:
     client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
-    if "messages" not in st.session_state: st.session_state.messages = []
+    
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
+    # DISPLAY PREVIOUS MESSAGES (Standard Multi-line)
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]): st.markdown(message["content"])
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
+    # NEW CHAT INPUT
     if prompt := st.chat_input("Speak to the passenger..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with
+        
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # Find Bio Column
+        bio_col = [c for c in passengers_df.columns if 'bio' in c.lower() or 'roleplay' in c.lower()]
+        bio_text = person.get(bio_col[0], "A passenger on the Titanic.") if bio_col else "A passenger on the Titanic."
+        
+        system_prompt = f"You are {p_name}. {bio_text} It is April 1912. Stay in character."
+        
+        try:
+            response = client.models.generate_content(
+                model=model_choice,
+                config={'system_instruction': system_prompt},
+                contents=prompt
+            )
+            with st.chat_message("assistant"):
+                st.markdown(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+        except Exception as e:
+            st.error(f"Telegraph error: {e}")
+else:
+    st.error("Missing API Key in Secrets!")
