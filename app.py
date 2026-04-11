@@ -2,14 +2,21 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 
-# --- 1. CONFIG & AESTHETICS ---
+# --- 1. CONFIG & VINTAGE AESTHETICS ---
 st.set_page_config(page_title="Titanic Manifest", page_icon="🚢")
 
 st.markdown("""
     <style>
     .stApp { background-color: #f5f5dc; }
     .main-title { color: #2c3e50; font-family: 'Georgia', serif; text-align: center; }
-    .bio-box { background-color: white; padding: 20px; border-radius: 10px; border: 1px solid #d3d3d3; color: black; }
+    /* This styles your narrative text to look like an old document */
+    .narrative-text { 
+        color: #1a1a1a; 
+        font-family: 'Courier New', Courier, monospace; 
+        font-size: 1.1rem; 
+        line-height: 1.6;
+        white-space: pre-wrap; /* Keeps your paragraph breaks from the Sheet */
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -41,20 +48,17 @@ st.write("---")
 if 'ImageLink' in p and pd.notna(p['ImageLink']):
     st.image(p['ImageLink'], use_container_width=True)
 
-# --- 6. BIOGRAPHY (The Specific Match) ---
-st.subheader("Passenger Details")
-
-# We use the exact name we found in your debug list
+# --- 6. THE NARRATIVE (No Box, Just Story) ---
+# We use the exact column name we found earlier
 target_col = 'Bio & Roleplay (The Narrative)'
 
 if target_col in p:
-    st.markdown(f"<div class='bio-box'>{p[target_col]}</div>", unsafe_allow_html=True)
-else:
-    st.error(f"Column '{target_col}' not found. Check your sheet headers!")
+    # This displays the story directly on the beige background
+    st.markdown(f"<div class='narrative-text'>{p[target_col]}</div>", unsafe_allow_html=True)
 
 # --- 7. CHAT BOX ---
 st.write("---")
 st.subheader(f"Speak with {p['Name'].split()[0]}")
-user_input = st.text_input("Ask about my life or the ship:", placeholder="What class are you traveling in?")
+user_input = st.text_input("Ask about my journey:", placeholder="Tell me more...")
 if user_input:
     st.info(f"*{p['Name']} is considering your question...*")
