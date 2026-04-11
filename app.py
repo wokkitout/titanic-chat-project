@@ -57,9 +57,23 @@ def load_data():
 
 df = load_data()
 
-# --- 4. PASSENGER LOOKUP ---
-passenger_data = df[df['Name'].str.strip() == passenger_name]
-p = passenger_data.iloc[0] if not passenger_data.empty else df[df['Name'].str.strip() == "Edward John Smith"].iloc[0]
+# --- 4. PASSENGER LOOKUP (The "No-Crash" Version) ---
+# Clean the names to avoid space errors
+df['Name_Clean'] = df['Name'].astype(str).str.strip()
+passenger_name_clean = passenger_name.strip()
+
+# Try to find the person from the QR code
+passenger_data = df[df['Name_Clean'] == passenger_name_clean]
+
+if not passenger_data.empty:
+    p = passenger_data.iloc[0]
+else:
+    # If QR name fails, try to find ANYONE with 'Smith' or just take the first person in the sheet
+    backup_search = df[df['Name_Clean'].str.contains("Smith", case=False, na=False)]
+    if not backup_search.empty:
+        p = backup_search.iloc[0]
+    else:
+        p = df.iloc[0] # If all else fails, just grab the very first row
 
 # --- 5. DISPLAY PORTRAIT ---
 st.markdown(f"<h1 class='main-title'>🚢 {p['Name']}</h1>", unsafe_allow_html=True)
