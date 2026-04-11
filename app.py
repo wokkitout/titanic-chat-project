@@ -123,3 +123,12 @@ if user_input:
         
     except Exception as e:
         st.error(f"⚠️ Connection Error: {e}")
+
+# --- THE SECRET TRIGGERS ---
+    # Jump to 2026
+    if user_input.strip().lower() == "the movie is over":
+        st.session_state.era = "2026"
+        
+    # Jump back to 1912
+    if user_input.strip().lower() == "rewind time":
+        st.session_state.era = "1912"
