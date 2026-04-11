@@ -59,8 +59,14 @@ if user_input:
         persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
         
         # The prompt that keeps them in 1912
+       # The prompt that keeps them in 1912
         prompt = f"""
         STRICT ROLEPLAY RULE: The current date is April 10, 1912. 
         You are currently aboard the Titanic, which has just begun its maiden voyage.
         You have NO KNOWLEDGE of any sinking, iceberg, or disaster.
-        If the user mentions a tragedy, act confused—to you, this
+        If the user mentions a tragedy, act confused—to you, this ship is unsinkable.
+        
+        Your identity: {p['Name']}
+        Background: {persona}
+        User's message: {user_input}
+        """ # <--- THESE THREE QUOTES ARE WHAT IS MISSING
