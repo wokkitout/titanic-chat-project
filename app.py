@@ -7,17 +7,35 @@ st.set_page_config(page_title="Titanic Manifest", page_icon="🚢")
 
 st.markdown("""
     <style>
-    .stApp { background-color: #f5f5dc; } /* Vintage Paper Beige */
+    /* Background */
+    .stApp { 
+        background-color: #f5f5dc; 
+    }
+    
+    /* Global Text Force-Black */
+    html, body, [data-testid="stWidgetLabel"], [data-testid="stMarkdownContainer"] p, h1, h2, h3, span {
+        color: #000000 !important;
+        font-family: 'Georgia', serif;
+    }
+
     .main-title { 
-        color: #2c3e50; 
-        font-family: 'Georgia', serif; 
+        color: #000000 !important;
         text-align: center; 
         margin-top: 20px;
-    }
-    .stTextInput label {
-        font-family: 'Georgia', serif;
-        color: #2c3e50;
         font-weight: bold;
+        font-size: 2.5rem;
+    }
+
+    /* Input Box Styling - Black text on White background */
+    .stTextInput input {
+        color: #000000 !important;
+        background-color: #ffffff !important;
+        border: 2px solid #000000 !important;
+    }
+
+    /* Horizontal line color */
+    hr {
+        border-top: 1px solid #000000 !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -50,23 +68,14 @@ st.write("---")
 if 'ImageLink' in p and pd.notna(p['ImageLink']):
     st.image(p['ImageLink'], use_container_width=True)
 
-# --- 6. THE CONVERSATION (No Bio, No Spoilers) ---
+# --- 6. THE CONVERSATION START ---
 st.write("---")
-st.subheader(f"Speak with {p['Name'].split()[0]}")
+# Clean, black text instructions
+st.markdown(f"### Address {p['Name'].split()[0]}")
+st.write(f"You find yourself aboard the R.M.S. Titanic. It is April 1912. {p['Name'].split()[0]} stands before you, unaware of the world you have come from.")
 
-# Instructions for the user
-st.write(f"*You are standing on the deck of the RMS Titanic. {p['Name'].split()[0]} is looking out at the horizon.*")
-
-user_input = st.text_input("Address the passenger:", placeholder="Good evening, how are you enjoying the voyage?")
+user_input = st.text_input("Speak to the passenger:", placeholder="Good evening. How are you finding the ship?")
 
 if user_input:
-    # --- 7. THE AI PROMPT (The "Time Travel" Rules) ---
-    # When you add your Gemini logic, make sure the system prompt is set like this:
-    # "You are {p['Name']}. It is April 1912. You are on the Titanic.
-    # You have NO knowledge of the future. You don't know what a 'cell phone', 
-    # 'internet', 'Wi-Fi', or 'AI' is. If asked about these things, you should 
-    # be confused or assume they are some strange new slang from America. 
-    # Use the 'Bio & Roleplay' column from the sheet for your history, but 
-    # NEVER reveal your fate (living or dying) unless it is happening in the moment."
-    
-    st.info(f"*{p['Name']} is looking at you, preparing a response...*")
+    # Your Gemini / AI logic will go here
+    st.markdown(f"**{p['Name']} is listening...**")
