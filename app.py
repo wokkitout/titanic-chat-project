@@ -46,7 +46,7 @@ st.write("---")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# This sets the default era to 1912 when they first open the app
+# This sets the default era to 1912
 if "era" not in st.session_state:
     st.session_state.era = "1912"
 
@@ -62,16 +62,16 @@ for msg in st.session_state.messages:
 user_input = st.chat_input(f"Speak to {p['Name'].split()[0]}:")
 
 if user_input:
-    # --- THE SECRET TRIGGERS ---
+    # --- THE SECRET TRIGGERS & PACING ---
     trigger_check = user_input.strip().lower()
     
-    # Trigger 1: Jump forward to 2026
     if trigger_check == "the movie is over":
-        st.session_state.era = "2026"
-        
-    # Trigger 2: Jump backward to 1912
-    if trigger_check == "rewind time":
-        st.session_state.era = "1912"
+        st.session_state.era = "2026_intro" # Moves to Stage 2 (The Tease)
+    elif trigger_check == "rewind time":
+        st.session_state.era = "1912" # Resets to Stage 1
+    elif st.session_state.era == "2026_intro":
+        # If they were in Stage 2, their reply (like "yes") instantly pushes them to Stage 3!
+        st.session_state.era = "2026_reveal" 
     
     st.session_state.messages.append({"role": "You", "content": user_input})
     st.markdown(f"🗣️ **You:** {user_input}")
@@ -92,7 +92,7 @@ if user_input:
         
         history_text = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.messages[-5:]]) 
         
-        # --- THE TIME MACHINE PROMPT LOGIC ---
+        # --- THE 3-STAGE PROMPT LOGIC ---
         if st.session_state.era == "1912":
             prompt = f"""
             STRICT ROLEPLAY RULE: The current date is April 10, 1912. 
@@ -102,24 +102,31 @@ if user_input:
             
             Your identity: {p['Name']}
             Background: {persona}
-            
-            Here is the conversation so far:
-            {history_text}
-            
-            Reply to the user's last message naturally as {p['Name']}.
+            Conversation so far: {history_text}
             """
-        else:
+            
+        elif st.session_state.era == "2026_intro":
             prompt = f"""
             STRICT ROLEPLAY RULE: The year is now 2026. The illusion is over.
             You are the historical spirit of {p['Name']}. 
-            The user just finished watching James Cameron's 'Titanic' movie.
+            The user just typed the secret phrase that they finished watching James Cameron's 'Titanic' movie.
             
-            1. Ask them "So... how was the movie?" or something similar.
-            2. Break character slightly to reveal your ACTUAL historical fate using this data: {fate}
-            3. Reflect briefly and emotionally on how strange it is to be a character in a movie, considering the trauma of what you actually went through.
+            1. Ask them an engaging question like: "So... how was the movie?"
+            2. Tell them the movie is just a Hollywood story, and ask them: "Would you like to know what actually happened to me that night?"
+            3. DO NOT reveal your actual fate yet. Keep them in suspense. Let them answer first.
             
             Background: {persona}
-            User's message: {user_input}
+            """
+            
+        elif st.session_state.era == "2026_reveal":
+            prompt = f"""
+            STRICT ROLEPLAY RULE: The year is now 2026. The user has agreed to hear your true story.
+            You are the historical spirit of {p['Name']}. 
+            
+            Reveal your ACTUAL historical fate using this data: {fate}
+            Make your response emotional, gripping, and reflective. Tell them what it was really like compared to the movie.
+            
+            Conversation so far: {history_text}
             """
         
         response = model.generate_content(prompt)
