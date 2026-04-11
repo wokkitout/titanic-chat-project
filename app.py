@@ -51,7 +51,6 @@ if user_input:
         
         # SELF-HEALING SCANNER: Automatically finds the correct model name for your region
         available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        # It looks for flash first, if not found, it grabs the default
         target = next((m for m in available_models if 'gemini-1.5-flash' in m), available_models[0])
         model = genai.GenerativeModel(target)
         
@@ -59,7 +58,6 @@ if user_input:
         persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
         
         # The prompt that keeps them in 1912
-       # The prompt that keeps them in 1912
         prompt = f"""
         STRICT ROLEPLAY RULE: The current date is April 10, 1912. 
         You are currently aboard the Titanic, which has just begun its maiden voyage.
@@ -69,4 +67,10 @@ if user_input:
         Your identity: {p['Name']}
         Background: {persona}
         User's message: {user_input}
-        """ # <--- THESE THREE QUOTES ARE WHAT IS MISSING
+        """
+        
+        response = model.generate_content(prompt)
+        st.markdown(f"**{p['Name']}:** {response.text}")
+        
+    except Exception as e:
+        st.error(f"⚠️ Connection Error: {e}")
