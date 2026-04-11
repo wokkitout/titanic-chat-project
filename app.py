@@ -46,3 +46,32 @@ if user_input:
     except Exception as e:
         # If this still fails, it's a settings issue in Google AI Studio
         st.error(f"⚠️ Connection Error: {e}")
+
+# --- 5. THE AI (STRICT CONNECTION) ---
+if user_input:
+    try:
+        # Get the key and strip out any hidden spaces/new lines
+        raw_key = st.secrets["GEMINI_KEY"]
+        clean_key = raw_key.strip().replace('"', '').replace("'", "")
+        
+        genai.configure(api_key=clean_key)
+        
+        # Use 'gemini-1.5-flash' - it's the fastest for these events
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
+        
+        prompt = f"""
+        You are {p['Name']} in April 1912. 
+        Background: {persona}
+        Stay in character. You think the ship is unsinkable. 
+        No modern talk. Keep it to 2 sentences.
+        User says: {user_input}
+        """
+        
+        response = model.generate_content(prompt)
+        st.markdown(f"**{p['Name']}:** {response.text}")
+        
+    except Exception as e:
+        # This will now tell us if it's STILL the key or something else
+        st.error(f"⚠️ Connection Error: {e}")
