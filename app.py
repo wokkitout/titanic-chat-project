@@ -50,15 +50,15 @@ if user_input:
 # --- 5. THE AI (STRICT CONNECTION) ---
 if user_input:
     try:
-        # Get the key and strip out any hidden spaces/new lines
+        # 1. Pull and clean the key from Secrets
         raw_key = st.secrets["GEMINI_KEY"]
         clean_key = raw_key.strip().replace('"', '').replace("'", "")
-        
         genai.configure(api_key=clean_key)
         
-        # Use 'gemini-1.5-flash' - it's the fastest for these events
+        # 2. Using the standard model name (Fixes the 404 error)
         model = genai.GenerativeModel('gemini-1.5-flash')
         
+        # 3. Pull the secret persona
         persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
         
         prompt = f"""
@@ -69,9 +69,12 @@ if user_input:
         User says: {user_input}
         """
         
+        # 4. Generate response
         response = model.generate_content(prompt)
+        
+        # 5. Display the response in bold black text
         st.markdown(f"**{p['Name']}:** {response.text}")
         
     except Exception as e:
-        # This will now tell us if it's STILL the key or something else
+        # This will tell us if it's the model, the key, or something else
         st.error(f"⚠️ Connection Error: {e}")
