@@ -60,8 +60,24 @@ st.write("---")
 if 'ImageLink' in p and pd.notna(p['ImageLink']):
     st.image(p['ImageLink'], use_container_width=True)
 
-# --- 7. BIOGRAPHY (The KeyError Fix) ---
+# --- 7. BIOGRAPHY (The "Find Anything" Fix) ---
 st.subheader("Passenger Details")
+
+# This looks for any column that even SLIGHTLY looks like 'Bio' or 'Story'
+# It handles lowercase, uppercase, and accidental spaces
+bio_col = None
+for col in df.columns:
+    c_clean = col.strip().lower()
+    if c_clean in ['biography', 'bio', 'details', 'story', 'description', 'about']:
+        bio_col = col
+        break
+
+if bio_col:
+    # We found it! Display it in the white box
+    st.markdown(f"<div class='bio-box'>{p[bio_col]}</div>", unsafe_allow_html=True)
+else:
+    # If it still fails, we will print ALL your column names so you can see the right one
+    st.error(f"Could not find Bio column. Your columns are: {list(df.columns)}")
 
 # This checks if your column is named 'Biography' or 'Bio' or 'Details'
 bio_col = next((c for c in ['Biography', 'Bio', 'Details', 'Story'] if c in p), None)
