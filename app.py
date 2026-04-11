@@ -49,22 +49,22 @@ if user_input:
         K = st.secrets["GEMINI_KEY"].strip()
         genai.configure(api_key=K)
         
-        # Self-healing model selection
-        models = [m.name for m in genai.list_models()]
-        target = next((m for m in models if 'gemini-1.5-flash' in m or 'gemini-pro' in m), models[0])
-        model = genai.GenerativeModel(target)
+        # Hardcoded to the fastest, most cost-effective model for your paid tier
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
+        # Pulls the 6-sentence bio from your Google Sheet
         persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
         
-        # The prompt that keeps her in the past
+        # The prompt that keeps them in 1912
         prompt = f"""
-        STRICT RULE: The date is April 10, 1912. The ship has just sailed.
-        You have NO KNOWLEDGE of the future, icebergs, or the sinking.
-        If the user mentions a disaster, act confused or amused.
+        STRICT ROLEPLAY RULE: The current date is April 10, 1912. 
+        You are currently aboard the Titanic, which has just begun its maiden voyage.
+        You have NO KNOWLEDGE of any sinking, iceberg, or disaster.
+        If the user mentions a tragedy, act confused—to you, this ship is unsinkable.
         
-        Identity: {p['Name']}
+        Your identity: {p['Name']}
         Background: {persona}
-        User says: {user_input}
+        User's message: {user_input}
         """
         
         response = model.generate_content(prompt)
