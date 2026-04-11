@@ -3,18 +3,14 @@ import pandas as pd
 import urllib.parse
 import google.generativeai as genai
 
-# --- 1. CONFIG & AESTHETICS ---
+# --- 1. THE VIBE (Black Text, Beige Paper) ---
 st.set_page_config(page_title="Titanic Manifest", page_icon="🚢")
-
 st.markdown("""
     <style>
     .stApp { background-color: #f5f5dc; }
-    html, body, [data-testid="stWidgetLabel"], p, h1, h2, h3, span {
-        color: #000000 !important;
-        font-family: 'Georgia', serif;
-    }
-    .main-title { text-align: center; margin-top: 20px; font-weight: bold; }
-    .stTextInput input { color: #000000 !important; border: 2px solid #000000 !important; }
+    * { color: #000000 !important; font-family: 'Georgia', serif; }
+    .main-title { text-align: center; font-weight: bold; font-size: 2rem; }
+    input { color: #000000 !important; background-color: #ffffff !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -35,37 +31,33 @@ except:
 
 passenger_name = urllib.parse.unquote(raw_name).strip()
 df['Name_Clean'] = df['Name'].astype(str).str.strip()
-passenger_data = df[df['Name_Clean'] == passenger_name]
-p = passenger_data.iloc[0] if not passenger_data.empty else df.iloc[0]
+p_row = df[df['Name_Clean'] == passenger_name]
+p = p_row.iloc[0] if not p_row.empty else df.iloc[0]
 
-# --- 4. DISPLAY HEADER & IMAGE ---
+# --- 4. THE SCREEN ---
 st.markdown(f"<h1 class='main-title'>🚢 {p['Name']}</h1>", unsafe_allow_html=True)
 if 'ImageLink' in p and pd.notna(p['ImageLink']):
     st.image(p['ImageLink'], use_container_width=True)
 
 st.write("---")
+user_input = st.text_input(f"Speak to {p['Name'].split()[0]}:", key="chat")
 
-# --- 5. THE CHAT LOGIC ---
-user_input = st.text_input(f"Speak to {p['Name'].split()[0]}:", key="input")
-
+# --- 5. THE AI (LUCILE'S BRAIN) ---
 if user_input:
-    # We define the model RIGHT HERE so it can't be 'undefined'
     try:
-        # PASTE YOUR KEY INSIDE THE QUOTES BELOW
-        genai.configure(api_key="AIzaSy...") 
+        # 🔑 KEY CHECK: Ensure there are no spaces inside the quotes!
+        genai.configure(api_key="PASTE_YOUR_AIZA_KEY_HERE")
         model = genai.GenerativeModel('gemini-1.5-flash')
         
-        persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
+        # Pull the secret persona
+        secret_persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
         
         prompt = f"""
         You are {p['Name']} in April 1912. 
-        Background: {persona}
-        
-        RULES:
-        - You are OBLIVIOUS to the sinking. The ship is unsinkable.
-        - You have no knowledge of modern technology.
-        - Stay in character. Keep it to 2 sentences.
-        
+        Background: {secret_persona}
+        - You are OBLIVIOUS to the sinking. You think the ship is unsinkable.
+        - You have no knowledge of modern tech (phones/internet).
+        - Use 1912 language. Keep it to 2 sentences.
         User says: {user_input}
         """
         
