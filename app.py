@@ -8,44 +8,32 @@ st.markdown("<style>.stApp { background-color: #f5f5dc; } * { color: #000000 !im
 
 # 2. DATA
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
-
-@st.cache_data
-def get_data():
-    return pd.read_csv(SHEET_URL)
-
-df = get_data()
+df = pd.read_csv(SHEET_URL)
 name = st.query_params.get("passenger", "Lucille Carter")
 p = df[df['Name'].str.contains(name, na=False)].iloc[0] if not df[df['Name'].str.contains(name, na=False)].empty else df.iloc[0]
 
 # 3. UI
 st.title(f"🚢 {p['Name']}")
-if 'ImageLink' in p and pd.notna(p['ImageLink']):
-    st.image(p['ImageLink'], width=300)
-
 user_input = st.text_input(f"Talk to {p['Name'].split()[0]}:")
 
-# 4. THE BRAIN (Self-Healing Version)
+# 4. THE BRAIN (The "List Everything" Version)
 if user_input:
     try:
         K = st.secrets["GEMINI_KEY"].strip()
         genai.configure(api_key=K)
         
-        # This checks which models YOUR key can actually see
-        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        # This will show us EXACTLY what your account is allowed to use
+        models = [m.name for m in genai.list_models()]
         
-        # Priority: 1.5 Flash -> 1.5 Flash-8b -> Pro
-        target_model = None
-        for m in ['models/gemini-1.5-flash', 'models/gemini-1.5-flash-8b', 'models/gemini-pro']:
-            if m in available_models:
-                target_model = m
-                break
+        # Let's try to find ANY model that contains the word 'gemini'
+        target = next((m for m in models if 'gemini' in m.lower()), None)
         
-        if target_model:
-            model = genai.GenerativeModel(target_model)
+        if target:
+            model = genai.GenerativeModel(target)
             response = model.generate_content(f"You are {p['Name']} in 1912. Reply: {user_input}")
             st.write(f"**{p['Name']}:** {response.text}")
         else:
-            st.error("No compatible models found on your account.")
+            st.warning(f"Your account doesn't see Gemini. Available models: {models}")
             
     except Exception as e:
         st.error(f"⚠️ {e}")
