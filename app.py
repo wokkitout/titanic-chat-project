@@ -41,15 +41,21 @@ else:
     st.write("📷 *[Portrait unavailable in manifest]*")
 
 st.write("---")
-user_input = st.text_input(f"Speak to {p['Name'].split()[0]}:")
 
-# --- 5. THE BRAIN (1912 MODE) ---
+# --- 5. THE BRAIN & CHAT UI ---
+# Using chat_input makes it pin to the bottom and auto-clear when you press enter!
+user_input = st.chat_input(f"Speak to {p['Name'].split()[0]}:")
+
 if user_input:
+    # 1. Show what YOU typed
+    st.markdown(f"🗣️ **You:** {user_input}")
+    st.write("") # Adds a tiny space for readability
+    
     try:
         K = st.secrets["GEMINI_KEY"].strip()
         genai.configure(api_key=K)
         
-        # SELF-HEALING SCANNER: Automatically finds the correct model name for your region
+        # SELF-HEALING SCANNER
         available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
         target = next((m for m in available_models if 'gemini-1.5-flash' in m), available_models[0])
         model = genai.GenerativeModel(target)
@@ -70,7 +76,9 @@ if user_input:
         """
         
         response = model.generate_content(prompt)
-        st.markdown(f"**{p['Name']}:** {response.text}")
+        
+        # 2. Show what the character says back
+        st.markdown(f"🛳️ **{p['Name']}:** {response.text}")
         
     except Exception as e:
         st.error(f"⚠️ Connection Error: {e}")
