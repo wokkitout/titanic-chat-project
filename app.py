@@ -1,52 +1,38 @@
 import streamlit as st
 import pandas as pd
-import urllib.parse
 import google.generativeai as genai
 
-# --- 1. SETTINGS & STYLE ---
-st.set_page_config(page_title="Titanic Manifest", page_icon="🚢")
-st.markdown("""
-    <style>
-    .stApp { background-color: #f5f5dc; }
-    * { color: #000000 !important; font-family: 'Georgia', serif; }
-    .main-title { text-align: center; font-weight: bold; }
-    </style>
-    """, unsafe_allow_html=True)
+# --- 1. PAGE SETUP ---
+st.set_page_config(page_title="Titanic", page_icon="🚢")
+st.markdown("<style>.stApp { background-color: #f5f5dc; } * { color: #000000 !important; font-family: 'Georgia', serif; }</style>", unsafe_allow_html=True)
 
-# --- 2. LOAD DATA ---
+# --- 2. LOAD PASSENGER DATA ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
+df = pd.read_csv(SHEET_URL)
 
-@st.cache_data
-def load_data():
-    return pd.read_csv(SHEET_URL)
+# Get name from the URL (or default to Lucille)
+query_name = st.query_params.get("passenger", "Lucille Carter")
+p = df[df['Name'].str.contains(query_name, na=False)].iloc[0] if not df[df['Name'].str.contains(query_name, na=False)].empty else df.iloc[0]
 
-df = load_data()
+# --- 3. THE DISPLAY ---
+st.title(f"🚢 {p['Name']}")
+if 'ImageLink' in p and pd.notna(p['ImageLink']):
+    st.image(p['ImageLink'], width=300)
 
-# --- 3. FIND PASSENGER ---
-# st.query_params is a dict-like object in modern Streamlit (1.30+)
-raw_name = st.query_params.get("passenger", "Lucille Carter")
-passenger_name = urllib.parse.unquote(raw_name).strip()
+user_input = st.text_input(f"Talk to {p['Name'].split()[0]}:")
 
-p_row = df[df['Name'].str.strip() == passenger_name]
-p = p_row.iloc[0] if not p_row.empty else df.iloc[0]
-
-# --- 4. DISPLAY ---
-st.markdown(f"<h1 class='main-title'>🚢 {p['Name']}</h1>", unsafe_allow_html=True)
-
-if 'ImageLink' in df.columns and pd.notna(p['ImageLink']):
-    st.image(p['ImageLink'], use_container_width=True)
-
-st.write("---")
-
-user_input = st.text_input(f"Speak to {p['Name'].split()[0]}:", key="user_msg")
-
-# --- 5. THE BRAIN ---
+# --- 4. THE AI BRAIN ---
 if user_input:
     try:
+        # We grab the key from the SECRETS menu (Step 3)
         api_key = st.secrets["GEMINI_KEY"]
         genai.configure(api_key=api_key.strip())
-
         model = genai.GenerativeModel('gemini-1.5-flash')
-
-        bio_col = 'Bio & Roleplay (The Narrative)'
-        persona = p[bio_col] if bio_col in df.columns and pd.notna(p[bio_col]) else "
+        
+        persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
+        prompt = f"You are {p['Name']} in 1912. {persona}. No knowledge of sinking. Reply to: {user_input}"
+        
+        response = model.generate_content(prompt)
+        st.write(f"**{p['Name']}:** {response.text}")
+    except Exception as e:
+        st.error(f"Error: {e}")
