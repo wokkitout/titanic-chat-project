@@ -13,7 +13,7 @@ st.markdown("""
     }
     
     /* Global Text Force-Black */
-    html, body, [data-testid="stWidgetLabel"], [data-testid="stMarkdownContainer"] p, h1, h2, h3, span {
+    html, body, [data-testid="stWidgetLabel"], [data-testid="stMarkdownContainer"] p, h1, h2, h3, span, li {
         color: #000000 !important;
         font-family: 'Georgia', serif;
     }
@@ -23,7 +23,7 @@ st.markdown("""
         text-align: center; 
         margin-top: 20px;
         font-weight: bold;
-        font-size: 2.5rem;
+        font-size: 2.2rem;
     }
 
     /* Input Box Styling - Black text on White background */
@@ -33,9 +33,9 @@ st.markdown("""
         border: 2px solid #000000 !important;
     }
 
-    /* Horizontal line color */
-    hr {
-        border-top: 1px solid #000000 !important;
+    /* Remove default Streamlit padding at the top */
+    .block-container {
+        padding-top: 1rem;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -61,21 +61,24 @@ df = load_data()
 passenger_data = df[df['Name'].str.strip() == passenger_name]
 p = passenger_data.iloc[0] if not passenger_data.empty else df[df['Name'].str.strip() == "Edward John Smith"].iloc[0]
 
-# --- 5. DISPLAY HEADER & IMAGE ---
+# --- 5. DISPLAY PORTRAIT ---
 st.markdown(f"<h1 class='main-title'>🚢 {p['Name']}</h1>", unsafe_allow_html=True)
-st.write("---")
 
 if 'ImageLink' in p and pd.notna(p['ImageLink']):
     st.image(p['ImageLink'], use_container_width=True)
 
-# --- 6. THE CONVERSATION START ---
+# --- 6. THE IMMERSIVE SETTING ---
 st.write("---")
-# Clean, black text instructions
-st.markdown(f"### Address {p['Name'].split()[0]}")
-st.write(f"You find yourself aboard the R.M.S. Titanic. It is April 1912. {p['Name'].split()[0]} stands before you, unaware of the world you have come from.")
+st.markdown(f"**Location:** R.M.S. Titanic — At Sea")
+st.markdown(f"**Date:** April 14, 1912")
+st.write(f"You approach {p['Name'].split()[0]} on the deck. The ship is steady, and the evening air is crisp. They seem quite content with the voyage.")
 
-user_input = st.text_input("Speak to the passenger:", placeholder="Good evening. How are you finding the ship?")
+# --- 7. CHAT INPUT ---
+user_input = st.text_input(f"Address {p['Name'].split()[0]}:", placeholder="Say something...")
 
 if user_input:
-    # Your Gemini / AI logic will go here
-    st.markdown(f"**{p['Name']} is listening...**")
+    # When you add Gemini logic, ensure your System Prompt says:
+    # 'You are {p["Name"]}. You are currently on the Titanic. You believe 
+    # the ship is unsinkable. You are excited about your arrival in New York.
+    # You have NO idea what an iceberg or a shipwreck is.'
+    st.markdown(f"**{p['Name']} looks up to answer you...**")
