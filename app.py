@@ -1,52 +1,27 @@
 import streamlit as st
 import pandas as pd
 import urllib.parse
+import google.generativeai as genai
 
-# --- 1. CONFIG & VINTAGE AESTHETICS ---
+# --- 1. CONFIG & AESTHETICS ---
 st.set_page_config(page_title="Titanic Manifest", page_icon="🚢")
 
 st.markdown("""
     <style>
-    /* Background */
-    .stApp { 
-        background-color: #f5f5dc; 
-    }
-    
-    /* Global Text Force-Black */
-    html, body, [data-testid="stWidgetLabel"], [data-testid="stMarkdownContainer"] p, h1, h2, h3, span, li {
+    .stApp { background-color: #f5f5dc; }
+    html, body, [data-testid="stWidgetLabel"], p, h1, h2, h3, span {
         color: #000000 !important;
         font-family: 'Georgia', serif;
     }
-
-    .main-title { 
-        color: #000000 !important;
-        text-align: center; 
-        margin-top: 20px;
-        font-weight: bold;
-        font-size: 2.2rem;
-    }
-
-    /* Input Box Styling - Black text on White background */
-    .stTextInput input {
-        color: #000000 !important;
-        background-color: #ffffff !important;
-        border: 2px solid #000000 !important;
-    }
-
-    /* Remove default Streamlit padding at the top */
-    .block-container {
-        padding-top: 1rem;
-    }
+    .main-title { text-align: center; margin-top: 20px; font-weight: bold; }
+    .stTextInput input { color: #000000 !important; border: 2px solid #000000 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. URL DECODER ---
-try:
-    raw_name = st.query_params.get("passenger", "Edward John Smith")
-except:
-    raw_name = st.experimental_get_query_params().get("passenger", ["Edward John Smith"])[0]
-
-passenger_name = urllib.parse.unquote(raw_name).strip()
+# --- 2. BRAIN SETUP ---
+# Get your key from https://aistudio.google.com/
+genai.configure(api_key="PASTE_YOUR_KEY_HERE")
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 # --- 3. DATA LOADING ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
@@ -57,42 +32,54 @@ def load_data():
 
 df = load_data()
 
-# --- 4. PASSENGER LOOKUP (The "No-Crash" Version) ---
-# Clean the names to avoid space errors
-df['Name_Clean'] = df['Name'].astype(str).str.strip()
-passenger_name_clean = passenger_name.strip()
+# --- 4. THE "NO-CRASH" PASSENGER LOOKUP ---
+try:
+    raw_name = st.query_params.get("passenger", "Edward John Smith")
+except:
+    raw_name = st.experimental_get_query_params().get("passenger", ["Edward John Smith"])[0]
 
-# Try to find the person from the QR code
-passenger_data = df[df['Name_Clean'] == passenger_name_clean]
+passenger_name = urllib.parse.unquote(raw_name).strip()
+
+# Fuzzy search to prevent that red IndexError
+df['Name_Clean'] = df['Name'].astype(str).str.strip()
+passenger_data = df[df['Name_Clean'] == passenger_name]
 
 if not passenger_data.empty:
     p = passenger_data.iloc[0]
 else:
-    # If QR name fails, try to find ANYONE with 'Smith' or just take the first person in the sheet
-    backup_search = df[df['Name_Clean'].str.contains("Smith", case=False, na=False)]
-    if not backup_search.empty:
-        p = backup_search.iloc[0]
-    else:
-        p = df.iloc[0] # If all else fails, just grab the very first row
+    # If it can't find the name, just grab the first row so it doesn't crash
+    p = df.iloc[0]
 
-# --- 5. DISPLAY PORTRAIT ---
+# --- 5. DISPLAY ---
 st.markdown(f"<h1 class='main-title'>🚢 {p['Name']}</h1>", unsafe_allow_html=True)
-
 if 'ImageLink' in p and pd.notna(p['ImageLink']):
     st.image(p['ImageLink'], use_container_width=True)
 
-# --- 6. THE IMMERSIVE SETTING ---
 st.write("---")
-st.markdown(f"**Location:** R.M.S. Titanic — At Sea")
-st.markdown(f"**Date:** April 14, 1912")
-st.write(f"You approach {p['Name'].split()[0]} on the deck. The ship is steady, and the evening air is crisp. They seem quite content with the voyage.")
+st.write(f"*It is April 14, 1912. {p['Name'].split()[0]} is standing nearby.*")
 
-# --- 7. CHAT INPUT ---
-user_input = st.text_input(f"Address {p['Name'].split()[0]}:", placeholder="Say something...")
+# --- 6. THE CONVERSATION ---
+user_input = st.text_input(f"Speak to {p['Name'].split()[0]}:", key="chat_input")
 
 if user_input:
-    # When you add Gemini logic, ensure your System Prompt says:
-    # 'You are {p["Name"]}. You are currently on the Titanic. You believe 
-    # the ship is unsinkable. You are excited about your arrival in New York.
-    # You have NO idea what an iceberg or a shipwreck is.'
-    st.markdown(f"**{p['Name']} looks up to answer you...**")
+    # Use the long bio column name we found earlier
+    persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
+    
+    prompt = f"""
+    You are {p['Name']}, a passenger on the Titanic in April 1912.
+    Your history: {persona}
+    
+    RULES:
+    1. You are OBLIVIOUS to the sinking. You think the ship is unsinkable.
+    2. No modern tech talk.
+    3. Stay in 1912 character.
+    4. Keep it to 2 sentences.
+    
+    User says: {user_input}
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        st.markdown(f"**{p['Name']}:** {response.text}")
+    except Exception as e:
+        st.error("The passenger is silent. Check if your Gemini API Key is valid!")
