@@ -50,15 +50,14 @@ if user_input:
 # --- 5. THE AI (STRICT CONNECTION) ---
 if user_input:
     try:
-        # 1. Pull and clean the key from Secrets
+        # Get the key from Secrets
         raw_key = st.secrets["GEMINI_KEY"]
-        clean_key = raw_key.strip().replace('"', '').replace("'", "")
-        genai.configure(api_key=clean_key)
+        # .strip() cleans up any accidental spaces from copying/pasting
+        genai.configure(api_key=raw_key.strip())
         
-        # 2. Using the standard model name (Fixes the 404 error)
+        # We use 'gemini-1.5-flash' because 'flash-latest' was causing that 404 error
         model = genai.GenerativeModel('gemini-1.5-flash')
         
-        # 3. Pull the secret persona
         persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
         
         prompt = f"""
@@ -69,12 +68,11 @@ if user_input:
         User says: {user_input}
         """
         
-        # 4. Generate response
         response = model.generate_content(prompt)
         
-        # 5. Display the response in bold black text
+        # This displays the actual answer in bold black text
         st.markdown(f"**{p['Name']}:** {response.text}")
         
     except Exception as e:
-        # This will tell us if it's the model, the key, or something else
+        # This will now only show ONE error box if something goes wrong
         st.error(f"⚠️ Connection Error: {e}")
