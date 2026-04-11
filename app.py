@@ -7,16 +7,17 @@ st.set_page_config(page_title="Titanic Manifest", page_icon="🚢")
 
 st.markdown("""
     <style>
-    .stApp { background-color: #f5f5dc; }
-    .main-title { color: #2c3e50; font-family: 'Georgia', serif; text-align: center; }
-    .wiki-text { 
-        color: #1a1a1a; 
-        font-family: 'Helvetica', sans-serif; 
-        font-size: 1rem; 
-        line-height: 1.5;
-        background-color: #ffffff;
-        padding: 15px;
-        border-left: 5px solid #2c3e50;
+    .stApp { background-color: #f5f5dc; } /* Vintage Paper Beige */
+    .main-title { 
+        color: #2c3e50; 
+        font-family: 'Georgia', serif; 
+        text-align: center; 
+        margin-top: 20px;
+    }
+    .stTextInput label {
+        font-family: 'Georgia', serif;
+        color: #2c3e50;
+        font-weight: bold;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -49,23 +50,23 @@ st.write("---")
 if 'ImageLink' in p and pd.notna(p['ImageLink']):
     st.image(p['ImageLink'], use_container_width=True)
 
-# --- 6. HISTORICAL RECORD (The Wikipedia Box) ---
-st.subheader("White Star Line Archive")
-
-# Instead of pulling the "Secret Bio", we show a generic "Public Info" summary
-# You can update this text to be the Wikipedia summary for each person
-wiki_summary = f"{p['Name']} was a passenger on the RMS Titanic. Records indicate they boarded at {p.get('Role / Class', 'the designated port')}. No further public records are available regarding their final destination."
-
-st.markdown(f"<div class='wiki-text'>{wiki_summary}</div>", unsafe_allow_html=True)
-
-# --- 7. THE AI CHAT (Where the persona lives) ---
+# --- 6. THE CONVERSATION (No Bio, No Spoilers) ---
 st.write("---")
-st.subheader(f"Inquire with {p['Name'].split()[0]}")
-st.write("*Speak to the passenger to learn of their experiences and eventual fate.*")
+st.subheader(f"Speak with {p['Name'].split()[0]}")
 
-user_input = st.text_input("Type your message:", placeholder="Are you worried about the ice?")
+# Instructions for the user
+st.write(f"*You are standing on the deck of the RMS Titanic. {p['Name'].split()[0]} is looking out at the horizon.*")
+
+user_input = st.text_input("Address the passenger:", placeholder="Good evening, how are you enjoying the voyage?")
 
 if user_input:
-    # Here, your Gemini AI will use the 'Bio & Roleplay' column 
-    # to answer, but the user CAN'T see that column on the screen!
-    st.info(f"*{p['Name']} is typing a reply...*")
+    # --- 7. THE AI PROMPT (The "Time Travel" Rules) ---
+    # When you add your Gemini logic, make sure the system prompt is set like this:
+    # "You are {p['Name']}. It is April 1912. You are on the Titanic.
+    # You have NO knowledge of the future. You don't know what a 'cell phone', 
+    # 'internet', 'Wi-Fi', or 'AI' is. If asked about these things, you should 
+    # be confused or assume they are some strange new slang from America. 
+    # Use the 'Bio & Roleplay' column from the sheet for your history, but 
+    # NEVER reveal your fate (living or dying) unless it is happening in the moment."
+    
+    st.info(f"*{p['Name']} is looking at you, preparing a response...*")
