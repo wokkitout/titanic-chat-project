@@ -14,15 +14,14 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. THE BRAIN (API CHECK) ---
-# Replace the string below with your new API Key
-API_KEY = "YOUR_NEW_API_KEY_HERE"
-
+# --- 2. THE BRAIN (Using Secure Secrets) ---
 try:
+    # This pulls the key from the Streamlit Settings so it's not in the code
+    API_KEY = st.secrets["GEMINI_KEY"]
     genai.configure(api_key=API_KEY)
     model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
-    st.error(f"API Configuration Error: {e}")
+    st.error("I can't find my brain! Make sure GEMINI_KEY is added to Streamlit Secrets.")
 
 # --- 3. DATA LOADING ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
