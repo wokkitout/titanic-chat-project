@@ -12,8 +12,13 @@ df = pd.read_csv(SHEET_URL)
 name = st.query_params.get("passenger", "Lucille Carter")
 p = df[df['Name'].str.contains(name, na=False)].iloc[0] if not df[df['Name'].str.contains(name, na=False)].empty else df.iloc[0]
 
-# 3. UI
+# --- 3. UI ---
 st.title(f"🚢 {p['Name']}")
+
+# ADD THESE LINES BELOW:
+if 'ImageLink' in p and pd.notna(p['ImageLink']):
+    st.image(p['ImageLink'], width=300)
+
 user_input = st.text_input(f"Talk to {p['Name'].split()[0]}:")
 
 # 4. THE BRAIN (The "List Everything" Version)
