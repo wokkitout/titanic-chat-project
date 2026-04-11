@@ -23,8 +23,22 @@ def load_data():
 
 df = load_data()
 
-# --- 3. FIND PASSENGER ---
-passenger_data = df[df['Name'] == passenger_name]
+# --- FIND PASSENGER (Updated with .strip()) ---
+# This ignores accidental spaces in the URL or the Spreadsheet
+passenger_name_clean = passenger_name.strip()
+passenger_data = df[df['Name'].str.strip() == passenger_name_clean]
+
+# If we don't find them, default back to the Captain
+if passenger_data.empty:
+    passenger_data = df[df['Name'] == "Edward John Smith"]
+    # We keep the Captain's data but we'll show the name we TRIED to find 
+    # so we can debug it on your screen!
+    display_name = f"NOT FOUND: {passenger_name_clean}"
+else:
+    display_name = passenger_name_clean
+    p = passenger_data.iloc[0]
+
+st.title(f"Titanic Passenger: {display_name}")
 
 # If we don't find them, default back to the Captain
 if passenger_data.empty:
