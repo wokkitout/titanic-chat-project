@@ -49,8 +49,11 @@ if user_input:
         K = st.secrets["GEMINI_KEY"].strip()
         genai.configure(api_key=K)
         
-        # Hardcoded to the fastest, most cost-effective model for your paid tier
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # SELF-HEALING SCANNER: Automatically finds the correct model name for your region
+        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        # It looks for flash first, if not found, it grabs the default
+        target = next((m for m in available_models if 'gemini-1.5-flash' in m), available_models[0])
+        model = genai.GenerativeModel(target)
         
         # Pulls the 6-sentence bio from your Google Sheet
         persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
@@ -60,15 +63,4 @@ if user_input:
         STRICT ROLEPLAY RULE: The current date is April 10, 1912. 
         You are currently aboard the Titanic, which has just begun its maiden voyage.
         You have NO KNOWLEDGE of any sinking, iceberg, or disaster.
-        If the user mentions a tragedy, act confused—to you, this ship is unsinkable.
-        
-        Your identity: {p['Name']}
-        Background: {persona}
-        User's message: {user_input}
-        """
-        
-        response = model.generate_content(prompt)
-        st.markdown(f"**{p['Name']}:** {response.text}")
-        
-    except Exception as e:
-        st.error(f"⚠️ Connection Error: {e}")
+        If the user mentions a tragedy, act confused—to you, this
