@@ -1,3 +1,12 @@
+import urllib.parse  # Make sure this is at the very top of app.py
+
+# Near the top where you get the URL parameters:
+query_params = st.query_params
+raw_passenger_name = query_params.get("passenger", "Edward John Smith")
+
+# ADD THIS LINE to fix the name:
+passenger_name = urllib.parse.unquote(raw_passenger_name)
+
 import streamlit as st
 import google.generativeai as genai
 import pandas as pd
