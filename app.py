@@ -43,11 +43,11 @@ user_input = st.text_input(f"Speak to {p['Name'].split()[0]}:", key="user_msg")
 # --- 5. THE BRAIN ---
 if user_input:
     try:
-        # This pulled from Streamlit Secrets
+        # We fetch the key from the SECRETS menu, not the code
         api_key = st.secrets["GEMINI_KEY"]
         genai.configure(api_key=api_key.strip())
         
-        # We use 'gemini-1.5-flash' - no '-latest' or '-pro'
+        # Standard model name to avoid 404 errors
         model = genai.GenerativeModel('gemini-1.5-flash')
         
         persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
