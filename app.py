@@ -2,10 +2,9 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 
-# --- 1. PAGE CONFIG & AESTHETICS ---
+# --- 1. PAGE CONFIG & VINTAGE AESTHETICS ---
 st.set_page_config(page_title="Titanic Manifest", page_icon="🚢")
 
-# This brings back your beige background and custom styling
 st.markdown("""
     <style>
     .stApp {
@@ -15,11 +14,19 @@ st.markdown("""
         color: #2c3e50;
         font-family: 'Georgia', serif;
         text-align: center;
+        padding-top: 20px;
+    }
+    .bio-box {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #d3d3d3;
+        color: #000000;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. URL DECODER (The Lucille Fix) ---
+# --- 2. THE LUCILLE FIX (URL DECODER) ---
 try:
     raw_name = st.query_params.get("passenger", "Edward John Smith")
 except:
@@ -48,24 +55,27 @@ else:
 st.markdown(f"<h1 class='main-title'>🚢 {p['Name']}</h1>", unsafe_allow_html=True)
 st.write("---")
 
-# --- 6. PASSENGER IMAGE ---
+# --- 6. IMAGE DISPLAY ---
+# Using the Postimg link logic we set up
 if 'ImageLink' in p and pd.notna(p['ImageLink']):
     st.image(p['ImageLink'], use_container_width=True)
-else:
-    st.warning("Portrait not found in archives.")
 
-# --- 7. BIOGRAPHY ---
+# --- 7. BIOGRAPHY (The KeyError Fix) ---
 st.subheader("Passenger Details")
-st.info(p['Biography'])
 
-# --- 8. THE CHAT BOX (Restored) ---
+# This checks if your column is named 'Biography' or 'Bio' or 'Details'
+bio_col = next((c for c in ['Biography', 'Bio', 'Details', 'Story'] if c in p), None)
+
+if bio_col:
+    st.markdown(f"<div class='bio-box'>{p[bio_col]}</div>", unsafe_allow_html=True)
+else:
+    st.error("Could not find the Biography column in your sheet. Please check the column header name!")
+
+# --- 8. RESTORED CHAT BOX ---
 st.write("---")
 st.subheader(f"Speak with {p['Name'].split()[0]}")
-
-# Placeholder for your chat input
-user_input = st.text_input("Ask a question about my journey:", placeholder="What is your cabin like?")
+user_input = st.text_input("Ask about my life or the ship:", placeholder="What class are you traveling in?")
 
 if user_input:
-    # This is where your Gemini API logic would trigger
-    st.write(f"*{p['Name']} is thinking...*")
-    # (Insert your specific Gemini chat code here)
+    st.info(f"*{p['Name']} is considering your question...*")
+    # Your Gemini API code goes right here!
