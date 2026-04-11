@@ -62,10 +62,16 @@ for msg in st.session_state.messages:
 user_input = st.chat_input(f"Speak to {p['Name'].split()[0]}:")
 
 if user_input:
-    # --- THE SECRET TRIGGER ---
-    # If the user types this exact phrase, the app secretly switches to 2026 mode
-    if user_input.strip().lower() == "the movie is over":
+    # --- THE SECRET TRIGGERS ---
+    trigger_check = user_input.strip().lower()
+    
+    # Trigger 1: Jump forward to 2026
+    if trigger_check == "the movie is over":
         st.session_state.era = "2026"
+        
+    # Trigger 2: Jump backward to 1912
+    if trigger_check == "rewind time":
+        st.session_state.era = "1912"
     
     st.session_state.messages.append({"role": "You", "content": user_input})
     st.markdown(f"🗣️ **You:** {user_input}")
@@ -123,12 +129,3 @@ if user_input:
         
     except Exception as e:
         st.error(f"⚠️ Connection Error: {e}")
-
-# --- THE SECRET TRIGGERS ---
-    # Jump to 2026
-    if user_input.strip().lower() == "the movie is over":
-        st.session_state.era = "2026"
-        
-    # Jump back to 1912
-    if user_input.strip().lower() == "rewind time":
-        st.session_state.era = "1912"
