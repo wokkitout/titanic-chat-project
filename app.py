@@ -4,8 +4,14 @@ import urllib.parse
 import google.generativeai as genai
 
 # --- 1. SETTINGS & STYLE ---
-st.set_page_config(page_title="Titanic", page_icon="🚢")
-st.markdown("<style>.stApp { background-color: #f5f5dc; } * { color: #000000 !important; font-family: 'Georgia', serif; } .main-title { text-align: center; font-weight: bold; }</style>", unsafe_allow_html=True)
+st.set_page_config(page_title="Titanic Manifest", page_icon="🚢")
+st.markdown("""
+    <style>
+    .stApp { background-color: #f5f5dc; }
+    * { color: #000000 !important; font-family: 'Georgia', serif; }
+    .main-title { text-align: center; font-weight: bold; }
+    </style>
+    """, unsafe_allow_html=True)
 
 # --- 2. LOAD DATA ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
@@ -37,13 +43,15 @@ user_input = st.text_input(f"Speak to {p['Name'].split()[0]}:", key="user_msg")
 # --- 5. THE BRAIN ---
 if user_input:
     try:
-        # This looks for the key in your Streamlit Settings
+        # This pulled from Streamlit Secrets
         api_key = st.secrets["GEMINI_KEY"]
         genai.configure(api_key=api_key.strip())
+        
+        # We use 'gemini-1.5-flash' - no '-latest' or '-pro'
         model = genai.GenerativeModel('gemini-1.5-flash')
         
         persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
-        prompt = f"You are {p['Name']} in 1912. {persona}. No future knowledge. Reply to: {user_input}"
+        prompt = f"You are {p['Name']} in April 1912. {persona}. You don't know the ship sinks. Reply to: {user_input}"
         
         response = model.generate_content(prompt)
         st.markdown(f"**{p['Name']}:** {response.text}")
