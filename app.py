@@ -2,19 +2,23 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 
-# --- 1. CONFIG & URL SETUP ---
-# This is the "Engine" that finds your passengers
+# --- 1. PAGE CONFIG ---
+st.set_page_config(page_title="Titanic Manifest", page_icon="🚢")
+
+# --- 2. URL DATA DECODER ---
+# This section captures the name from the QR code and fixes symbols like %20
 try:
-    # Attempt to get the name from the URL (?passenger=Name)
+    # Handles newest Streamlit version
     raw_name = st.query_params.get("passenger", "Edward John Smith")
 except:
-    # Fallback for older versions of Streamlit
+    # Fallback for older Streamlit versions
     raw_name = st.experimental_get_query_params().get("passenger", ["Edward John Smith"])[0]
 
-# IMPORTANT: This turns "Lucille%20Carter" back into "Lucille Carter"
-passenger_name = urllib.parse.unquote(raw_name)
+# Convert "Lucille%20Carter" -> "Lucille Carter" and remove any extra spaces
+passenger_name = urllib.parse.unquote(raw_name).strip()
 
-# --- 2. LOAD DATA ---
+# --- 3. DATA LOADING ---
+# Replace this with your actual Google Sheet CSV Export link
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
 
 @st.cache_data(ttl=60)
@@ -23,32 +27,29 @@ def load_data():
 
 df = load_data()
 
-# --- FIND PASSENGER (Updated with .strip()) ---
-# This ignores accidental spaces in the URL or the Spreadsheet
-passenger_name_clean = passenger_name.strip()
-passenger_data = df[df['Name'].str.strip() == passenger_name_clean]
+# --- 4. PASSENGER LOOKUP ---
+# We strip spaces from the spreadsheet column too, just to be safe
+passenger_data = df[df['Name'].str.strip() == passenger_name]
 
-# If we don't find them, default back to the Captain
+# If the name from the QR isn't found, show the Captain
 if passenger_data.empty:
-    passenger_data = df[df['Name'] == "Edward John Smith"]
-    # We keep the Captain's data but we'll show the name we TRIED to find 
-    # so we can debug it on your screen!
-    display_name = f"NOT FOUND: {passenger_name_clean}"
+    p = df[df['Name'].str.strip() == "Edward John Smith"].iloc[0]
 else:
-    display_name = passenger_name_clean
     p = passenger_data.iloc[0]
 
-st.title(f"Titanic Passenger: {display_name}")
+# --- 5. DISPLAY PASSENGER PAGE ---
+st.title(f"{p['Name']}")
 
-# If we don't find them, default back to the Captain
-if passenger_data.empty:
-    passenger_data = df[df['Name'] == "Edward John Smith"]
-    passenger_name = "Edward John Smith"
+# Display Image
+if 'ImageLink' in p and pd.notna(p['ImageLink']):
+    st.image(p['ImageLink'], use_container_width=True)
+else:
+    st.warning("No portrait available for this passenger.")
 
-p = passenger_data.iloc[0]
+# Display Bio
+st.subheader("Biography")
+st.write(p['Biography'])
 
-# --- 4. DISPLAY PAGE ---
-st.title(f"Titanic Passenger: {passenger_name}")
-
-# This is where your image and bio code goes...
-# (Keep the rest of your display code here)
+# --- 6. CHAT FEATURE (OPTIONAL) ---
+# If you have your Gemini chat code, you would place it here, 
+# using p['Biography'] as the context for the AI.
