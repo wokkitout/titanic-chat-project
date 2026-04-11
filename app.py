@@ -9,14 +9,8 @@ st.markdown("<style>.stApp { background-color: #f5f5dc; } * { color: #000000 !im
 
 # --- 2. THE DATA ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
+df = pd.read_csv(SHEET_URL)
 
-@st.cache_data(ttl=60)
-def load_data():
-    return pd.read_csv(SHEET_URL)
-
-df = load_data()
-
-# --- 3. PASSENGER LOOKUP ---
 try:
     raw_name = st.query_params.get("passenger", "Lucille Carter")
 except:
@@ -25,36 +19,30 @@ except:
 passenger_name = urllib.parse.unquote(raw_name).strip()
 p = df[df['Name'].str.strip() == passenger_name].iloc[0] if not df[df['Name'].str.strip() == passenger_name].empty else df.iloc[0]
 
-# --- 4. THE UI ---
+# --- 3. THE UI ---
 st.markdown(f"<h1 class='main-title'>🚢 {p['Name']}</h1>", unsafe_allow_html=True)
 if 'ImageLink' in p and pd.notna(p['ImageLink']):
     st.image(p['ImageLink'], use_container_width=True)
 
 st.write("---")
-user_input = st.text_input(f"Speak to {p['Name'].split()[0]}:", placeholder="Enter your message...")
+user_input = st.text_input(f"Speak to {p['Name'].split()[0]}:")
 
-# --- 5. THE AI (REWRITTEN CONNECTION) ---
+# --- 4. THE AI (LUCILE'S BRAIN) ---
 if user_input:
-    # 🔑 PASTE YOUR CLEAN KEY HERE
-    API_KEY = "PASTE_YOUR_AIza_KEY_HERE"
-    
     try:
-        # We configure it right here to ensure it's fresh
-        genai.configure(api_key=API_KEY.strip())
+        # Pulling the key from the SECRETS you just set up
+        API_KEY = st.secrets["GEMINI_KEY"]
+        genai.configure(api_key=API_KEY)
         
-        # We'll try 'gemini-1.5-flash-latest'—it's very reliable for new keys
+        # Using the absolute most stable model name
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
         
         persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
-        prompt = f"You are {p['Name']} on the Titanic in 1912. {persona}. No future knowledge. Stay in character. User says: {user_input}"
+        prompt = f"You are {p['Name']} on the Titanic in 1912. {persona}. You are oblivious to the sinking. Keep it to 2 sentences. User says: {user_input}"
         
-        # Adding a timeout/retry feel
         response = model.generate_content(prompt)
+        st.markdown(f"**{p['Name']}:** {response.text}")
         
-        if response:
-            st.markdown(f"**{p['Name']}:** {response.text}")
-            
     except Exception as e:
-        # If this still says '400', the API isn't enabled in Google Cloud
+        # If this still fails, it's a settings issue in Google AI Studio
         st.error(f"⚠️ Connection Error: {e}")
-        st.info("If it says 'API key not valid', go to AI Studio, click 'Get API Key', and make sure you create a 'New Key in a NEW Project'.")
