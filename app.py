@@ -2,23 +2,32 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 
-# --- 1. PAGE CONFIG ---
+# --- 1. PAGE CONFIG & AESTHETICS ---
 st.set_page_config(page_title="Titanic Manifest", page_icon="🚢")
 
-# --- 2. URL DATA DECODER ---
-# This section captures the name from the QR code and fixes symbols like %20
+# This brings back your beige background and custom styling
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #f5f5dc; /* Classic Beige */
+    }
+    .main-title {
+        color: #2c3e50;
+        font-family: 'Georgia', serif;
+        text-align: center;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- 2. URL DECODER (The Lucille Fix) ---
 try:
-    # Handles newest Streamlit version
     raw_name = st.query_params.get("passenger", "Edward John Smith")
 except:
-    # Fallback for older Streamlit versions
     raw_name = st.experimental_get_query_params().get("passenger", ["Edward John Smith"])[0]
 
-# Convert "Lucille%20Carter" -> "Lucille Carter" and remove any extra spaces
 passenger_name = urllib.parse.unquote(raw_name).strip()
 
 # --- 3. DATA LOADING ---
-# Replace this with your actual Google Sheet CSV Export link
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1ELXfthW0Eni6MGMWDjyGAaSreKuf0lj_7LAundUj1yY/export?format=csv&gid=1264206782"
 
 @st.cache_data(ttl=60)
@@ -28,28 +37,35 @@ def load_data():
 df = load_data()
 
 # --- 4. PASSENGER LOOKUP ---
-# We strip spaces from the spreadsheet column too, just to be safe
 passenger_data = df[df['Name'].str.strip() == passenger_name]
 
-# If the name from the QR isn't found, show the Captain
 if passenger_data.empty:
     p = df[df['Name'].str.strip() == "Edward John Smith"].iloc[0]
 else:
     p = passenger_data.iloc[0]
 
-# --- 5. DISPLAY PASSENGER PAGE ---
-st.title(f"{p['Name']}")
+# --- 5. DISPLAY HEADER ---
+st.markdown(f"<h1 class='main-title'>🚢 {p['Name']}</h1>", unsafe_allow_html=True)
+st.write("---")
 
-# Display Image
+# --- 6. PASSENGER IMAGE ---
 if 'ImageLink' in p and pd.notna(p['ImageLink']):
     st.image(p['ImageLink'], use_container_width=True)
 else:
-    st.warning("No portrait available for this passenger.")
+    st.warning("Portrait not found in archives.")
 
-# Display Bio
-st.subheader("Biography")
-st.write(p['Biography'])
+# --- 7. BIOGRAPHY ---
+st.subheader("Passenger Details")
+st.info(p['Biography'])
 
-# --- 6. CHAT FEATURE (OPTIONAL) ---
-# If you have your Gemini chat code, you would place it here, 
-# using p['Biography'] as the context for the AI.
+# --- 8. THE CHAT BOX (Restored) ---
+st.write("---")
+st.subheader(f"Speak with {p['Name'].split()[0]}")
+
+# Placeholder for your chat input
+user_input = st.text_input("Ask a question about my journey:", placeholder="What is your cabin like?")
+
+if user_input:
+    # This is where your Gemini API logic would trigger
+    st.write(f"*{p['Name']} is thinking...*")
+    # (Insert your specific Gemini chat code here)
