@@ -27,7 +27,7 @@ if user_input:
         # We look for the key in Streamlit Secrets, NOT the code
         api_key = st.secrets["GEMINI_KEY"]
         genai.configure(api_key=api_key.strip())
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-pro')
         
         persona = p.get('Bio & Roleplay (The Narrative)', "A passenger on the Titanic.")
         prompt = f"You are {p['Name']} in 1912. {persona}. You think the ship is unsinkable. Reply to: {user_input}"
